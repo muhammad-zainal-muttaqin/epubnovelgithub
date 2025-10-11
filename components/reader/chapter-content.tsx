@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react"
 interface ChapterContentProps {
   content: string
   fontSize: number
-  fontFamily: "sans" | "serif" | "mono"
+  fontFamily: "sans" | "serif" | "mono" | "merriweather" | "open-sans" | "literata" | "garamond"
   lineHeight: number
   maxWidth: number
   onScroll?: (scrollPercentage: number) => void
