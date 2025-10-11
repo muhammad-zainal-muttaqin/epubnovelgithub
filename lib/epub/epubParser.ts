@@ -533,9 +533,18 @@ export async function parseEPUB(file: File): Promise<{ book: Book; chapters: Cha
   console.log("[v0] === Building href-to-index mapping ===")
   const hrefToIndexMap = new Map<string, number>()
   chapters.forEach((chapter, index) => {
+    // Relative href as stored in the spine item (e.g. Text/chapter001.xhtml)
     const baseHref = normalizePath(chapter.href.split("#")[0])
     hrefToIndexMap.set(baseHref, index)
-    hrefToIndexMap.set(chapter.href, index) // Also store with anchor if present
+
+    // Also map absolute href relative to OPF base path (e.g. OEBPS/Text/chapter001.xhtml)
+    try {
+      const absoluteHref = normalizePath(resolvePath(basePath, baseHref))
+      hrefToIndexMap.set(absoluteHref, index)
+    } catch {}
+
+    // Also store with anchor if present (best-effort)
+    hrefToIndexMap.set(chapter.href, index)
   })
   console.log("[v0] Href-to-index mapping created:", hrefToIndexMap.size, "entries")
 
