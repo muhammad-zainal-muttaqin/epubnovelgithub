@@ -87,20 +87,18 @@ export default function LibraryPage() {
                 variant="outline"
                 size="icon"
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                aria-label="Settings"
+                aria-label="Toggle theme"
                 className="h-11 w-11"
               >
                 <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                 <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               </Button>
             )}
-            <UploadButton onUploadComplete={loadBooks} />
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto max-w-6xl px-4 py-4 pb-24">
-
+      <div className="container mx-auto max-w-6xl px-4 py-4">
         {/* Content */}
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
@@ -126,12 +124,12 @@ export default function LibraryPage() {
         )}
       </div>
 
-      {/* Sticky CTA */}
-      <div className="fixed inset-x-0 bottom-0 p-4 pb-[calc(16px+env(safe-area-inset-bottom))] bg-gradient-to-t from-background/95 to-transparent backdrop-blur">
-        <div className="container mx-auto max-w-6xl">
-          <UploadButton onUploadComplete={loadBooks} className="w-full" />
+      {/* FAB for non-empty state */}
+      {!isLoading && books.length > 0 && (
+        <div className="fixed bottom-6 right-6">
+          <UploadButton onUploadComplete={loadBooks} className="h-14 w-14 rounded-full shadow-lg" />
         </div>
-      </div>
+      )}
     </div>
   )
 }
