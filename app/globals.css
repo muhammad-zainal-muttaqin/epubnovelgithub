@@ -125,6 +125,16 @@
     @apply bg-background text-foreground;
   }
 
+  /* Hide all scrollbars globally */
+  * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+  }
+
+  *::-webkit-scrollbar {
+    display: none; /* WebKit */
+  }
+
   /* Added scrollbar-hide utility class */
   .scrollbar-hide {
     -ms-overflow-style: none;
