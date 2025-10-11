@@ -239,7 +239,14 @@ export default function ReaderPage() {
         <ChapterContent
           content={currentChapter.content}
           fontSize={settings.fontSize}
-          fontFamily={settings.fontFamily}
+          fontFamily={
+            settings.fontFamily === "merriweather" ||
+            settings.fontFamily === "open-sans" ||
+            settings.fontFamily === "literata" ||
+            settings.fontFamily === "garamond"
+              ? "serif"
+              : settings.fontFamily
+          }
           lineHeight={settings.lineHeight}
           maxWidth={settings.maxWidth}
           onScroll={setScrollProgress}
