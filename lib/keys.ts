@@ -20,7 +20,7 @@ export const STORES = {
 export const DEFAULT_SETTINGS: import("./types").ReaderSettings = {
   fontSize: 18,
   theme: "dark",
-  fontFamily: "serif",
+  fontFamily: "garamond",
   lineHeight: 1.7,
   maxWidth: 700,
   textAlign: "justify",
