@@ -54,8 +54,8 @@ export default function HomePage() {
               No cloud, no tracking, just pure reading experience.
             </p>
             <Button size="lg" onClick={() => router.push("/library")} className="text-lg px-6 py-4 sm:px-8 sm:py-6">
-              <Upload className="mr-2 h-5 w-5" />
-              Start Reading
+              <BookOpen className="mr-2 h-5 w-5" />
+              Go to Library
             </Button>
           </div>
 
@@ -108,17 +108,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* CTA */}
-          <div>
-            <h2 className="text-2xl font-bold mb-4">Ready to Start?</h2>
-            <p className="text-muted-foreground mb-6">
-              Upload your first EPUB and begin your private reading journey.
-            </p>
-            <Button size="lg" onClick={() => router.push("/library")} className="text-lg px-6 py-4 sm:px-8 sm:py-6">
-              <Upload className="mr-2 h-5 w-5" />
-              Upload Your First Book
-            </Button>
-          </div>
         </div>
       </main>
 
