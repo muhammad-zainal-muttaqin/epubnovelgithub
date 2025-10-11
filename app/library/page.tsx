@@ -8,10 +8,11 @@ import type { Book } from "@/lib/types"
 import { UploadButton } from "@/components/library/upload-button"
 import { BookCard } from "@/components/library/book-card"
 import { EmptyState } from "@/components/library/empty-state"
-import { Loader2, Moon, Sun } from "lucide-react"
+import { Loader2, Moon, Sun, Home } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 
 export default function LibraryPage() {
   const [books, setBooks] = useState<Book[]>([])
@@ -19,6 +20,7 @@ export default function LibraryPage() {
   const { toast } = useToast()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     setMounted(true)
@@ -68,11 +70,17 @@ export default function LibraryPage() {
       <div className="container mx-auto max-w-6xl px-4 py-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">My Library</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {books.length} {books.length === 1 ? "book" : "books"}
-            </p>
+          <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={() => router.push("/")}>
+              <Home className="mr-2 h-4 w-4" />
+              Home
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold">My Library</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {books.length} {books.length === 1 ? "book" : "books"}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {mounted && (
