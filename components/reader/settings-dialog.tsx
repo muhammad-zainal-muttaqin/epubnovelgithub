@@ -76,6 +76,22 @@ export function SettingsDialog({ open, onOpenChange, settings, onSettingsChange 
               step={50}
             />
           </div>
+
+          {/* Text Alignment */}
+          <div className="space-y-2">
+            <Label>Text Alignment</Label>
+            <Select value={settings.textAlign} onValueChange={(value: any) => onSettingsChange({ textAlign: value })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="left">Rata Kiri</SelectItem>
+                <SelectItem value="center">Tengah</SelectItem>
+                <SelectItem value="right">Rata Kanan</SelectItem>
+                <SelectItem value="justify">Justify</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

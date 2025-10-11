@@ -23,4 +23,5 @@ export const DEFAULT_SETTINGS: import("./types").ReaderSettings = {
   fontFamily: "serif",
   lineHeight: 1.7,
   maxWidth: 700,
+  textAlign: "left",
 }

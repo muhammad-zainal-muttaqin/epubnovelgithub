@@ -8,10 +8,11 @@ interface ChapterContentProps {
   fontFamily: "sans" | "serif" | "mono" | "merriweather" | "open-sans" | "literata" | "garamond"
   lineHeight: number
   maxWidth: number
+  textAlign: "left" | "center" | "right" | "justify"
   onScroll?: (scrollPercentage: number) => void
 }
 
-export function ChapterContent({ content, fontSize, fontFamily, lineHeight, maxWidth, onScroll }: ChapterContentProps) {
+export function ChapterContent({ content, fontSize, fontFamily, lineHeight, maxWidth, textAlign, onScroll }: ChapterContentProps) {
   const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -45,10 +46,17 @@ export function ChapterContent({ content, fontSize, fontFamily, lineHeight, maxW
     garamond: "font-[family-name:var(--font-garamond)]",
   }[fontFamily]
 
+  const textAlignClass = {
+    left: "text-left",
+    center: "text-center",
+    right: "text-right",
+    justify: "text-justify",
+  }[textAlign]
+
   return (
     <div ref={contentRef} className="h-full overflow-y-auto scrollbar-hide">
       <article
-        className={cn("prose prose-neutral mx-auto px-4 py-8 dark:prose-invert", fontFamilyClass)}
+        className={cn("prose prose-neutral mx-auto px-4 py-8 dark:prose-invert", fontFamilyClass, textAlignClass)}
         style={{
           fontSize: `${fontSize}px`,
           lineHeight: lineHeight,

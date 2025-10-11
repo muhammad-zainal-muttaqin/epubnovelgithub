@@ -242,6 +242,7 @@ export default function ReaderPage() {
           fontFamily={settings.fontFamily}
           lineHeight={settings.lineHeight}
           maxWidth={settings.maxWidth}
+          textAlign={settings.textAlign}
           onScroll={setScrollProgress}
         />
       </main>

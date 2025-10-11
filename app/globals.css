@@ -166,7 +166,15 @@
   }
 
   .prose img {
-    @apply rounded-lg;
+    @apply rounded-lg mx-auto block;
+  }
+
+  .prose figure {
+    @apply text-center;
+  }
+
+  .prose figure img {
+    @apply mx-auto;
   }
 
   .prose blockquote {

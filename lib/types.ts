@@ -60,4 +60,5 @@ export interface ReaderSettings {
   fontFamily: "sans" | "serif" | "mono" | "merriweather" | "open-sans" | "literata" | "garamond"
   lineHeight: number // 1.4-2.0
   maxWidth: number // 600-800px
+  textAlign: "left" | "center" | "right" | "justify"
 }
