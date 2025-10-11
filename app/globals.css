@@ -135,6 +135,18 @@
     display: none; /* WebKit */
   }
 
+  /* Smooth scrolling behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Enhanced smooth scrolling for webkit browsers */
+  @supports (scroll-behavior: smooth) {
+    * {
+      scroll-behavior: smooth;
+    }
+  }
+
   /* Added scrollbar-hide utility class */
   .scrollbar-hide {
     -ms-overflow-style: none;
@@ -143,6 +155,26 @@
 
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Professional smooth scrolling for chapter content */
+  .chapter-scroll {
+    scroll-behavior: smooth;
+    scroll-padding-top: 2rem;
+    scroll-snap-type: y proximity;
+  }
+
+  /* Smooth transitions for better UX */
+  .smooth-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Enhanced scroll momentum for mobile */
+  @media (max-width: 768px) {
+    .chapter-scroll {
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
   }
 
   /* Added prose styles for better reading experience */

@@ -29,7 +29,7 @@ export function ReaderFooter({
   theme,
 }: ReaderFooterProps) {
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <footer className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 smooth-transition">
       <div className="container mx-auto max-w-5xl px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           {/* Controls */}
