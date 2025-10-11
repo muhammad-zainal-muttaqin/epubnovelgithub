@@ -542,14 +542,28 @@ export async function parseEPUB(file: File): Promise<{ book: Book; chapters: Cha
   // Update chapter titles from TOC if available
   if (tocItems.length > 0) {
     console.log("[v0] === Updating chapter titles from TOC ===")
+    console.log("[v0] TOC items:", tocItems.length)
+    console.log("[v0] Chapter hrefs in map:", Array.from(hrefToIndexMap.keys()))
+    
     tocItems.forEach((tocItem) => {
       const baseHref = normalizePath(tocItem.href.split("#")[0])
       const chapterIndex = hrefToIndexMap.get(baseHref)
       
+      console.log("[v0] Trying to map TOC item:", {
+        label: tocItem.label,
+        href: tocItem.href,
+        baseHref: baseHref,
+        foundIndex: chapterIndex,
+        currentTitle: chapterIndex !== undefined ? chapters[chapterIndex].title : "N/A"
+      })
+      
       if (chapterIndex !== undefined) {
         // Update chapter title from TOC
+        const oldTitle = chapters[chapterIndex].title
         chapters[chapterIndex].title = tocItem.label
-        console.log("[v0] Updated chapter", chapterIndex, "title:", tocItem.label)
+        console.log("[v0] ✓ Updated chapter", chapterIndex, "from:", oldTitle, "to:", tocItem.label)
+      } else {
+        console.log("[v0] ✗ No chapter found for TOC href:", baseHref)
       }
     })
   }
