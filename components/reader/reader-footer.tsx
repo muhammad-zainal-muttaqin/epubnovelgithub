@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Type, Moon, Sun, List } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Type, Moon, Sun, List, ArrowUp } from 'lucide-react'
 
 interface ReaderFooterProps {
   hasPrev: boolean
@@ -12,6 +12,7 @@ interface ReaderFooterProps {
   onFontIncrease: () => void
   onThemeToggle: () => void
   onChapterListToggle: () => void
+  onBackToTop: () => void
   theme: "light" | "dark"
 }
 
@@ -24,6 +25,7 @@ export function ReaderFooter({
   onFontIncrease,
   onThemeToggle,
   onChapterListToggle,
+  onBackToTop,
   theme,
 }: ReaderFooterProps) {
   return (
@@ -45,6 +47,14 @@ export function ReaderFooter({
             </Button>
             <Button variant="ghost" size="sm" onClick={onThemeToggle}>
               {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+            </Button>
+          </div>
+
+          {/* Back to Top */}
+          <div className="flex items-center">
+            <Button variant="ghost" size="sm" onClick={onBackToTop}>
+              <ArrowUp className="h-4 w-4" />
+              <span className="ml-1 hidden sm:inline">Top</span>
             </Button>
           </div>
 

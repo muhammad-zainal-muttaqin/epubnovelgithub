@@ -237,6 +237,13 @@ export default function ReaderPage() {
     setSettings((prev) => ({ ...prev, ...updates }))
   }, [])
 
+  const handleBackToTop = useCallback(() => {
+    const contentElement = document.querySelector('[data-chapter-content]')
+    if (contentElement) {
+      contentElement.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [])
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -295,6 +302,7 @@ export default function ReaderPage() {
         onFontIncrease={handleFontIncrease}
         onThemeToggle={handleThemeToggle}
         onChapterListToggle={() => setSidebarOpen(true)}
+        onBackToTop={handleBackToTop}
         theme={(theme as "light" | "dark") || "light"}
       />
 
