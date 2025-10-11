@@ -1,30 +1,55 @@
-# Novel reader implementation
+# EPUB Novel Reader
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+Aplikasi web modern untuk membaca novel EPUB dengan antarmuka yang bersih dan fitur-fitur yang lengkap.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/muhammad-zainal-muttaqins-projects/v0-novel-reader-implementation)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/vtWfZmlhylf)
+## Fitur
 
-## Overview
+- 📚 Upload dan baca file EPUB
+- 🎨 Antarmuka yang responsif dan modern
+- ⚙️ Pengaturan font, ukuran, dan tema
+- 📖 Navigasi bab yang mudah
+- 💾 Progress pembacaan otomatis
+- 🌙 Mode gelap/terang
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+## Teknologi
+
+- **Framework**: Next.js 15
+- **Styling**: Tailwind CSS
+- **Package Manager**: Bun
+- **UI Components**: Radix UI
+- **Icons**: Lucide React
+
+## Instalasi
+
+1. Clone repository ini
+```bash
+git clone <repository-url>
+cd epubnovelreader
+```
+
+2. Install dependencies
+```bash
+bun install
+```
+
+3. Jalankan development server
+```bash
+bun dev
+```
+
+4. Buka [http://localhost:3000](http://localhost:3000) di browser
+
+## Penggunaan
+
+1. Upload file EPUB melalui tombol upload
+2. Pilih novel yang ingin dibaca
+3. Gunakan navigasi untuk berpindah antar bab
+4. Sesuaikan pengaturan tampilan sesuai preferensi
 
 ## Deployment
 
-Your project is live at:
+Aplikasi ini dapat di-deploy ke platform seperti Vercel, Netlify, atau platform lainnya yang mendukung Next.js.
 
-**[https://vercel.com/muhammad-zainal-muttaqins-projects/v0-novel-reader-implementation](https://vercel.com/muhammad-zainal-muttaqins-projects/v0-novel-reader-implementation)**
+## Lisensi
 
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.app/chat/projects/vtWfZmlhylf](https://v0.app/chat/projects/vtWfZmlhylf)**
-
-## How It Works
-
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+MIT License
