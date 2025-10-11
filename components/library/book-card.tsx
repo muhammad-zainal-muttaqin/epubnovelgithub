@@ -74,7 +74,7 @@ export function BookCard({ book, onDelete }: BookCardProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                    <DropdownMenuItem onClick={handleDelete} variant="destructive">
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
                     </DropdownMenuItem>
