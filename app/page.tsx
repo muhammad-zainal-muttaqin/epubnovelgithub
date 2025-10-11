@@ -42,25 +42,25 @@ export default function HomePage() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-20">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-6xl mx-auto text-center">
           {/* Hero */}
           <div className="mb-16">
-            <h1 className="text-5xl font-bold tracking-tight mb-6">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-6">
               Your Personal{" "}
               <span className="text-primary">EPUB Library</span>
             </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               A beautiful, privacy-first EPUB reader that keeps your books local and secure. 
               No cloud, no tracking, just pure reading experience.
             </p>
-            <Button size="lg" onClick={() => router.push("/library")} className="text-lg px-8 py-6">
+            <Button size="lg" onClick={() => router.push("/library")} className="text-lg px-6 py-4 sm:px-8 sm:py-6">
               <Upload className="mr-2 h-5 w-5" />
               Start Reading
             </Button>
           </div>
 
           {/* Key Features */}
-          <div className="grid md:grid-cols-3 gap-8 mb-16">
+          <div className="grid gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 mb-16">
             <div className="p-6">
               <BookOpen className="h-12 w-12 mx-auto mb-4 text-primary" />
               <h3 className="text-lg font-semibold mb-2">Clean Reading</h3>
@@ -114,7 +114,7 @@ export default function HomePage() {
             <p className="text-muted-foreground mb-6">
               Upload your first EPUB and begin your private reading journey.
             </p>
-            <Button size="lg" onClick={() => router.push("/library")} className="text-lg px-8 py-6">
+            <Button size="lg" onClick={() => router.push("/library")} className="text-lg px-6 py-4 sm:px-8 sm:py-6">
               <Upload className="mr-2 h-5 w-5" />
               Upload Your First Book
             </Button>
