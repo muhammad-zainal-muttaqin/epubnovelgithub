@@ -148,7 +148,8 @@
   }
 
   /* Disable smooth scrolling during custom animations */
-  .no-smooth-scroll {
+  .no-smooth-scroll,
+  .no-smooth-scroll * {
     scroll-behavior: auto !important;
   }
 
@@ -166,7 +167,6 @@
   .chapter-scroll {
     scroll-behavior: smooth;
     scroll-padding-top: 2rem;
-    scroll-snap-type: y proximity;
   }
 
   /* Smooth transitions for better UX */
