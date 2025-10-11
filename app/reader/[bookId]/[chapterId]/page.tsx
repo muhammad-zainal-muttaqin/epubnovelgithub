@@ -52,11 +52,11 @@ export default function ReaderPage() {
     }
   }, [])
 
-  // Load book and chapters
+  // Load book and chapters (only when bookId changes)
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log("[v0] Loading reader data for book:", bookId, "chapter:", chapterId)
+        console.log("[v0] Loading reader data for book:", bookId)
 
         const bookData = await getBook(bookId)
         console.log("[v0] Book data loaded:", bookData)
@@ -105,7 +105,16 @@ export default function ReaderPage() {
     }
 
     loadData()
-  }, [bookId, chapterId, router])
+  }, [bookId, router]) // Removed chapterId from dependencies
+
+  // Update chapter index when URL changes (without re-fetching data)
+  useEffect(() => {
+    const chapterIndex = Number.parseInt(chapterId)
+    if (!isNaN(chapterIndex) && chapterIndex >= 0 && chapters.length > 0 && chapterIndex < chapters.length) {
+      setCurrentChapterIndex(chapterIndex)
+      setScrollProgress(0)
+    }
+  }, [chapterId, chapters.length])
 
   // Save progress periodically
   useEffect(() => {
