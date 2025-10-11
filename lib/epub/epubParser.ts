@@ -33,6 +33,179 @@ function resolvePath(basePath: string, relativePath: string): string {
   return base.join("/")
 }
 
+// TOC Item interface
+interface TOCItem {
+  label: string
+  href: string
+  children?: TOCItem[]
+}
+
+// Parse TOC from nav.xhtml (EPUB 3)
+async function parseNavXhtml(zip: JSZip, navHref: string, basePath: string): Promise<TOCItem[]> {
+  console.log("[v0] Parsing nav.xhtml:", navHref)
+  const navPath = resolvePath(basePath, navHref)
+  const navFile = zip.file(navPath)
+  
+  if (!navFile) {
+    console.log("[v0] nav.xhtml not found:", navPath)
+    return []
+  }
+
+  const navContent = await navFile.async("text")
+  const parser = new DOMParser()
+  const navDoc = parser.parseFromString(navContent, "text/html")
+  
+  // Find the TOC nav element
+  const tocNav = navDoc.querySelector('nav[*|type="toc"], nav#toc')
+  if (!tocNav) {
+    console.log("[v0] TOC nav element not found in nav.xhtml")
+    return []
+  }
+
+  const items: TOCItem[] = []
+  const navItems = tocNav.querySelectorAll("ol > li, ul > li")
+  
+  navItems.forEach((li) => {
+    const link = li.querySelector("a")
+    if (link) {
+      const href = link.getAttribute("href") || ""
+      const label = link.textContent?.trim() || ""
+      
+      if (href && label) {
+        items.push({
+          label,
+          href: normalizePath(resolvePath(navPath, href)),
+        })
+      }
+    }
+  })
+
+  console.log("[v0] Parsed", items.length, "items from nav.xhtml")
+  return items
+}
+
+// Parse TOC from toc.ncx (EPUB 2)
+async function parseTocNcx(zip: JSZip, ncxHref: string, basePath: string): Promise<TOCItem[]> {
+  console.log("[v0] Parsing toc.ncx:", ncxHref)
+  const ncxPath = resolvePath(basePath, ncxHref)
+  const ncxFile = zip.file(ncxPath)
+  
+  if (!ncxFile) {
+    console.log("[v0] toc.ncx not found:", ncxPath)
+    return []
+  }
+
+  const ncxContent = await ncxFile.async("text")
+  const parser = new DOMParser()
+  const ncxDoc = parser.parseFromString(ncxContent, "text/xml")
+  
+  const items: TOCItem[] = []
+  const navPoints = ncxDoc.querySelectorAll("navPoint")
+  
+  navPoints.forEach((navPoint) => {
+    const navLabel = navPoint.querySelector("navLabel text")
+    const content = navPoint.querySelector("content")
+    
+    if (navLabel && content) {
+      const label = navLabel.textContent?.trim() || ""
+      const href = content.getAttribute("src") || ""
+      
+      if (href && label) {
+        items.push({
+          label,
+          href: normalizePath(resolvePath(ncxPath, href)),
+        })
+      }
+    }
+  })
+
+  console.log("[v0] Parsed", items.length, "items from toc.ncx")
+  return items
+}
+
+// Parse TOC from EPUB (try nav.xhtml first, fallback to toc.ncx)
+async function parseTOC(zip: JSZip, opfDoc: Document, basePath: string): Promise<TOCItem[]> {
+  console.log("[v0] === Starting TOC parsing ===")
+  
+  // Try nav.xhtml (EPUB 3) first
+  const navItem = opfDoc.querySelector('item[properties*="nav"]')
+  if (navItem) {
+    const navHref = navItem.getAttribute("href")
+    if (navHref) {
+      const items = await parseNavXhtml(zip, navHref, basePath)
+      if (items.length > 0) {
+        console.log("[v0] TOC parsed from nav.xhtml")
+        return items
+      }
+    }
+  }
+  
+  // Fallback to toc.ncx (EPUB 2)
+  const tocItem = opfDoc.querySelector('item[media-type="application/x-dtbncx+xml"]')
+  if (tocItem) {
+    const tocHref = tocItem.getAttribute("href")
+    if (tocHref) {
+      const items = await parseTocNcx(zip, tocHref, basePath)
+      if (items.length > 0) {
+        console.log("[v0] TOC parsed from toc.ncx")
+        return items
+      }
+    }
+  }
+  
+  console.log("[v0] No TOC found, will use spine items")
+  return []
+}
+
+// Rewrite internal EPUB links to use chapter index routing
+function rewriteInternalLinks(
+  html: string,
+  hrefToIndexMap: Map<string, number>,
+  bookId: string,
+  currentChapterHref: string
+): string {
+  return html.replace(/<a([^>]*)href="([^"]*)"([^>]*)>/gi, (match, before, href, after) => {
+    // Skip external links
+    if (href.startsWith("http://") || href.startsWith("https://") || href.startsWith("//")) {
+      return match
+    }
+
+    // Skip mailto and other protocols
+    if (href.includes(":") && !href.startsWith("#")) {
+      return match
+    }
+
+    // Handle anchor-only links (stay on same page)
+    if (href.startsWith("#")) {
+      return match
+    }
+
+    try {
+      // Resolve relative href
+      const currentDir = currentChapterHref.split("/").slice(0, -1).join("/")
+      const resolvedHref = resolvePath(currentDir + "/", href)
+      const normalizedHref = normalizePath(resolvedHref)
+      
+      // Split href and anchor
+      const [baseHref, anchor] = normalizedHref.split("#")
+      
+      // Find chapter index
+      const chapterIndex = hrefToIndexMap.get(baseHref)
+      
+      if (chapterIndex !== undefined) {
+        // Rewrite to internal route
+        const newHref = `/reader/${bookId}/${chapterIndex}${anchor ? "#" + anchor : ""}`
+        return `<a${before}href="${newHref}"${after}>`
+      }
+    } catch (error) {
+      console.log("[v0] Error rewriting link:", href, error)
+    }
+
+    // Keep original if not found or error
+    return match
+  })
+}
+
 // Extract all images from EPUB
 async function extractImages(zip: JSZip, opfContent: string, basePath: string): Promise<Map<string, string>> {
   console.log("[v0] === Starting image extraction ===")
@@ -180,6 +353,9 @@ export async function parseEPUB(file: File): Promise<{ book: Book; chapters: Cha
 
   console.log("[v0] Book metadata:", { title, author })
 
+  // Parse TOC (new)
+  const tocItems = await parseTOC(zip, opfDoc, basePath)
+
   // Extract images FIRST
   const imageMap = await extractImages(zip, opfContent, basePath)
 
@@ -273,6 +449,7 @@ export async function parseEPUB(file: File): Promise<{ book: Book; chapters: Cha
         index: i,
         title: chapterTitle.trim(),
         content: sanitized,
+        href: normalizePath(href), // Store original href
       })
 
       console.log("[v0] Chapter", i, "processed:", chapterTitle)
@@ -281,9 +458,46 @@ export async function parseEPUB(file: File): Promise<{ book: Book; chapters: Cha
     }
   }
 
+  // Build href-to-index mapping
+  console.log("[v0] === Building href-to-index mapping ===")
+  const hrefToIndexMap = new Map<string, number>()
+  chapters.forEach((chapter, index) => {
+    const baseHref = normalizePath(chapter.href.split("#")[0])
+    hrefToIndexMap.set(baseHref, index)
+    hrefToIndexMap.set(chapter.href, index) // Also store with anchor if present
+  })
+  console.log("[v0] Href-to-index mapping created:", hrefToIndexMap.size, "entries")
+
+  // Update chapter titles from TOC if available
+  if (tocItems.length > 0) {
+    console.log("[v0] === Updating chapter titles from TOC ===")
+    tocItems.forEach((tocItem) => {
+      const baseHref = normalizePath(tocItem.href.split("#")[0])
+      const chapterIndex = hrefToIndexMap.get(baseHref)
+      
+      if (chapterIndex !== undefined) {
+        // Update chapter title from TOC
+        chapters[chapterIndex].title = tocItem.label
+        console.log("[v0] Updated chapter", chapterIndex, "title:", tocItem.label)
+      }
+    })
+  }
+
+  // Rewrite internal links in all chapters
+  console.log("[v0] === Rewriting internal links ===")
+  for (const chapter of chapters) {
+    const originalContent = chapter.content
+    chapter.content = rewriteInternalLinks(chapter.content, hrefToIndexMap, bookId, chapter.href)
+    
+    if (originalContent !== chapter.content) {
+      console.log("[v0] Links rewritten in chapter", chapter.index, ":", chapter.title)
+    }
+  }
+
   console.log("[v0] === EPUB parsing complete ===")
   console.log("[v0] Total chapters:", chapters.length)
   console.log("[v0] Total images:", imageMap.size)
+  console.log("[v0] TOC items:", tocItems.length)
 
   const book: Book = {
     id: bookId,
@@ -292,6 +506,7 @@ export async function parseEPUB(file: File): Promise<{ book: Book; chapters: Cha
     cover,
     totalChapters: chapters.length,
     currentChapter: 0,
+    progress: 0,
     addedAt: Date.now(),
   }
 
