@@ -28,11 +28,29 @@ export default function ReaderPage() {
   const [chapters, setChapters] = useState<Chapter[]>([])
   const [tocChapters, setTocChapters] = useState<TOCChapter[]>([])
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
-  const [settings, setSettings] = useState<ReaderSettings>(DEFAULT_SETTINGS)
+  const [settings, setSettings] = useState<ReaderSettings>(() => {
+    // Load settings immediately from localStorage on mount
+    if (typeof window !== "undefined") {
+      const savedSettings = localStorage.getItem(STORAGE_KEYS.READER_SETTINGS)
+      if (savedSettings) {
+        return JSON.parse(savedSettings)
+      }
+    }
+    return DEFAULT_SETTINGS
+  })
   const [scrollProgress, setScrollProgress] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+
+  // Load settings from localStorage once on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem(STORAGE_KEYS.READER_SETTINGS)
+    if (savedSettings) {
+      setSettings(JSON.parse(savedSettings))
+      console.log("[v0] Settings loaded from localStorage")
+    }
+  }, [])
 
   // Load book and chapters
   useEffect(() => {
@@ -70,13 +88,6 @@ export default function ReaderPage() {
         } else {
           console.warn("[v0] Invalid chapter index, using 0")
           setCurrentChapterIndex(0)
-        }
-
-        // Load settings from localStorage
-        const savedSettings = localStorage.getItem(STORAGE_KEYS.READER_SETTINGS)
-        if (savedSettings) {
-          setSettings(JSON.parse(savedSettings))
-          console.log("[v0] Settings loaded from localStorage")
         }
         
         // Load TOC chapters from localStorage
