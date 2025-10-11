@@ -19,10 +19,10 @@ export default function HomePage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+        <div className="container mx-auto max-w-6xl flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <BookOpen className="h-6 w-6" />
-            <h1 className="text-xl font-bold">EPUB Novel Reader</h1>
+            <h1 className="text-lg sm:text-xl font-bold">EPUB Novel Reader</h1>
           </div>
           <div className="flex items-center gap-2">
             {mounted && (
@@ -41,10 +41,10 @@ export default function HomePage() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-20">
+      <main className="container mx-auto px-4 py-12 sm:py-20">
         <div className="max-w-6xl mx-auto text-center">
           {/* Hero */}
-          <div className="mb-16">
+          <div className="mb-12 sm:mb-16">
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight mb-6">
               Your Personal{" "}
               <span className="text-primary">EPUB Library</span>
@@ -60,22 +60,22 @@ export default function HomePage() {
           </div>
 
           {/* Key Features */}
-          <div className="grid gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 mb-16">
-            <div className="p-6">
+          <div className="grid gap-6 sm:gap-8 sm:grid-cols-2 lg:grid-cols-3 mb-12 sm:mb-16">
+            <div className="p-4 sm:p-6">
               <BookOpen className="h-12 w-12 mx-auto mb-4 text-primary" />
               <h3 className="text-lg font-semibold mb-2">Clean Reading</h3>
               <p className="text-muted-foreground text-sm">
                 Distraction-free interface optimized for comfortable reading
               </p>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <Upload className="h-12 w-12 mx-auto mb-4 text-primary" />
               <h3 className="text-lg font-semibold mb-2">Fully Customizable</h3>
               <p className="text-muted-foreground text-sm">
                 Adjust fonts, sizes, alignment, and themes to your preference
               </p>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <Shield className="h-12 w-12 mx-auto mb-4 text-primary" />
               <h3 className="text-lg font-semibold mb-2">Privacy First</h3>
               <p className="text-muted-foreground text-sm">
@@ -85,7 +85,7 @@ export default function HomePage() {
           </div>
 
           {/* Privacy Highlight */}
-          <div className="bg-muted/30 rounded-2xl p-8 mb-16">
+          <div className="bg-muted/30 rounded-2xl p-6 sm:p-8 mb-12 sm:mb-16">
             <Shield className="h-16 w-16 mx-auto mb-6 text-primary" />
             <h2 className="text-2xl font-bold mb-4">Your Data, Your Device</h2>
             <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
@@ -124,7 +124,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto max-w-6xl px-4 py-6 sm:py-8">
           <div className="text-center text-muted-foreground">
             <p className="mb-2">&copy; 2025 EPUB Novel Reader</p>
             <Button variant="link" onClick={() => router.push("/privacy")} className="text-muted-foreground">
