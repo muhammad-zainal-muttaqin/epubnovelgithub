@@ -256,14 +256,18 @@ export default function ReaderPage() {
           const duration = Math.min(800, Math.max(300, distance * 0.5)) // Dynamic duration based on distance
           let startTime: number | null = null
 
-          const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3) // Ease-out cubic function
+          const easeInOutCubic = (t: number): number => {
+            return t < 0.5 
+              ? 4 * t * t * t  // Ease-in cubic
+              : 1 - Math.pow(-2 * t + 2, 3) / 2  // Ease-out cubic
+          }
 
           const animation = (currentTime: number) => {
             if (startTime === null) startTime = currentTime
             const timeElapsed = currentTime - startTime
             const progress = Math.min(timeElapsed / duration, 1)
             
-            const easedProgress = easeOutCubic(progress)
+            const easedProgress = easeInOutCubic(progress)
             element.scrollTop = startPosition - (distance * easedProgress)
             
             if (progress < 1) {
@@ -284,14 +288,18 @@ export default function ReaderPage() {
     const duration = Math.min(800, Math.max(300, distance * 0.5))
     let startTime: number | null = null
 
-    const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3)
+    const easeInOutCubic = (t: number): number => {
+      return t < 0.5 
+        ? 4 * t * t * t  // Ease-in cubic
+        : 1 - Math.pow(-2 * t + 2, 3) / 2  // Ease-out cubic
+    }
 
     const animation = (currentTime: number) => {
       if (startTime === null) startTime = currentTime
       const timeElapsed = currentTime - startTime
       const progress = Math.min(timeElapsed / duration, 1)
       
-      const easedProgress = easeOutCubic(progress)
+      const easedProgress = easeInOutCubic(progress)
       window.scrollTo(0, startPosition - (distance * easedProgress))
       
       if (progress < 1) {
