@@ -96,7 +96,7 @@ export default function ReaderPage() {
       const currentChapter = chapters[currentChapterIndex]
       if (!currentChapter) return
 
-      const overallProgress = ((currentChapterIndex + scrollProgress / 100) / chapters.length) * 100
+      const overallProgress = Math.min(((currentChapterIndex + scrollProgress / 100) / chapters.length) * 100, 100)
 
       await updateProgress(book.id, {
         chapterId: currentChapter.id,
@@ -222,7 +222,7 @@ export default function ReaderPage() {
   }
 
   const currentChapter = chapters[currentChapterIndex]
-  const overallProgress = ((currentChapterIndex + scrollProgress / 100) / chapters.length) * 100
+  const overallProgress = Math.min(((currentChapterIndex + scrollProgress / 100) / chapters.length) * 100, 100)
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">

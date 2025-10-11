@@ -24,14 +24,19 @@ export function ChapterContent({ content, fontSize, fontFamily, lineHeight, maxW
       const scrollHeight = element.scrollHeight - element.clientHeight
 
       if (scrollHeight > 0) {
-        const percentage = (scrollTop / scrollHeight) * 100
+        const percentage = Math.min((scrollTop / scrollHeight) * 100, 100)
         onScroll(percentage)
+      } else {
+        // If content fits in viewport, consider it 100% read
+        onScroll(100)
       }
     }
 
     const element = contentRef.current
     if (element) {
       element.addEventListener("scroll", handleScroll)
+      // Check initial scroll position
+      handleScroll()
       return () => element.removeEventListener("scroll", handleScroll)
     }
   }, [onScroll])
