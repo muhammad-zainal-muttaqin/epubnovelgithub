@@ -1,4 +1,4 @@
-// Chapter repository for CRUD operations
+// Chapter repository
 
 import { STORES } from "../keys"
 import type { Chapter } from "../types"

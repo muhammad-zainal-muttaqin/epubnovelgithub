@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Updated colors for comfortable reading experience */
+  /* Reading colors */
   --background: oklch(0.98 0.005 85);
   --foreground: oklch(0.15 0.01 85);
   --card: oklch(1 0 0);
@@ -41,7 +41,7 @@
 }
 
 .dark {
-  /* Dark theme optimized for reading with reduced eye strain */
+  /* Dark theme */
   --background: oklch(0.18 0.01 250);
   --foreground: oklch(0.92 0.01 85);
   --card: oklch(0.2 0.01 250);
@@ -125,7 +125,7 @@
     @apply bg-background text-foreground;
   }
 
-  /* Hide all scrollbars globally */
+  /* Hide scrollbars */
   * {
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* Internet Explorer 10+ */
@@ -135,19 +135,19 @@
     display: none; /* WebKit */
   }
 
-  /* Smooth scrolling behavior - disabled to prevent conflicts with custom animations */
+  /* Smooth scrolling disabled */
   /* html {
     scroll-behavior: smooth;
   } */
 
-  /* Enhanced smooth scrolling for webkit browsers - disabled */
+  /* Webkit smooth scrolling disabled */
   /* @supports (scroll-behavior: smooth) {
     * {
       scroll-behavior: smooth;
     }
   } */
 
-  /* Added scrollbar-hide utility class */
+  /* Scrollbar hide utility */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -157,26 +157,26 @@
     display: none;
   }
 
-  /* Professional smooth scrolling for chapter content */
+  /* Chapter scrolling */
   .chapter-scroll {
     scroll-padding-top: 2rem;
     scroll-behavior: smooth; /* enable only on reading container */
   }
 
-  /* Smooth transitions for better UX */
+  /* Smooth transitions */
   .smooth-transition {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Enhanced scroll momentum for mobile */
+  /* Mobile scroll momentum */
   @media (max-width: 768px) {
     .chapter-scroll {
       -webkit-overflow-scrolling: touch;
-      /* scroll-behavior: smooth; - disabled to prevent conflicts */
+      /* scroll-behavior: smooth; disabled */
     }
   }
 
-  /* Added prose styles for better reading experience */
+  /* Prose styles */
   .prose {
     @apply text-foreground;
   }

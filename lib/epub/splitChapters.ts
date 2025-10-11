@@ -1,4 +1,4 @@
-// Utility to split long chapters into smaller chunks if needed
+// Split chapters utility
 
 export interface ChapterChunk {
   index: number
@@ -40,7 +40,7 @@ export function splitChapter(content: string): ChapterChunk[] {
     }
   }
 
-  // Add remaining words
+  // Add remaining
   if (currentChunk.length > 0) {
     chunks.push({
       index: chunks.length,

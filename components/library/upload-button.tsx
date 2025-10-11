@@ -21,7 +21,7 @@ export function UploadButton({ onUploadComplete, className, children }: { onUplo
 
     console.log("[v0] Starting EPUB upload:", file.name, "Size:", file.size)
 
-    // Validate file type
+    // Validate type
     if (!file.name.endsWith(".epub")) {
       toast({
         title: "Invalid file type",
@@ -31,7 +31,7 @@ export function UploadButton({ onUploadComplete, className, children }: { onUplo
       return
     }
 
-    // Validate file size (max 50MB)
+    // Validate size
     if (file.size > 50 * 1024 * 1024) {
       toast({
         title: "File too large",
@@ -55,7 +55,7 @@ export function UploadButton({ onUploadComplete, className, children }: { onUplo
       await saveChapters(chapters)
       console.log("[v0] All data saved successfully")
       
-      // Save TOC chapters to localStorage
+      // Save TOC chapters
       if (tocChapters && tocChapters.length > 0) {
         localStorage.setItem(`toc-chapters-${book.id}`, JSON.stringify(tocChapters))
         console.log("[v0] TOC chapters saved to localStorage:", tocChapters.length)

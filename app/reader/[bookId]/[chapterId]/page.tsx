@@ -29,7 +29,7 @@ export default function ReaderPage() {
   const [tocChapters, setTocChapters] = useState<TOCChapter[]>([])
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
   const [settings, setSettings] = useState<ReaderSettings>(() => {
-    // Load settings immediately from localStorage on mount
+    // Load settings from localStorage
     if (typeof window !== "undefined") {
       const savedSettings = localStorage.getItem(STORAGE_KEYS.READER_SETTINGS)
       if (savedSettings) {
@@ -43,7 +43,7 @@ export default function ReaderPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
-  // Load settings from localStorage once on mount
+  // Load settings from localStorage
   useEffect(() => {
     const savedSettings = localStorage.getItem(STORAGE_KEYS.READER_SETTINGS)
     if (savedSettings) {
@@ -52,7 +52,7 @@ export default function ReaderPage() {
     }
   }, [])
 
-  // Load book and chapters (only when bookId changes)
+  // Load book and chapters
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -90,7 +90,7 @@ export default function ReaderPage() {
           setCurrentChapterIndex(0)
         }
         
-        // Load TOC chapters from localStorage
+        // Load TOC chapters
         const savedTOCChapters = localStorage.getItem(`toc-chapters-${bookId}`)
         if (savedTOCChapters) {
           setTocChapters(JSON.parse(savedTOCChapters))
@@ -107,7 +107,7 @@ export default function ReaderPage() {
     loadData()
   }, [bookId, router]) // Removed chapterId from dependencies
 
-  // Update chapter index when URL changes (without re-fetching data)
+  // Update chapter index when URL changes
   useEffect(() => {
     const chapterIndex = Number.parseInt(chapterId)
     if (!isNaN(chapterIndex) && chapterIndex >= 0 && chapters.length > 0 && chapterIndex < chapters.length) {
@@ -116,7 +116,7 @@ export default function ReaderPage() {
     }
   }, [chapterId, chapters.length])
 
-  // Save progress periodically
+  // Save progress
   useEffect(() => {
     if (!book || chapters.length === 0) return
 
@@ -144,7 +144,7 @@ export default function ReaderPage() {
     return () => clearTimeout(timer)
   }, [book, chapters, currentChapterIndex, scrollProgress])
 
-  // Save settings to localStorage
+  // Save settings
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.READER_SETTINGS, JSON.stringify(settings))
   }, [settings])
@@ -152,7 +152,7 @@ export default function ReaderPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if typing in input
+      // Ignore input fields
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
 
       switch (e.key) {
@@ -238,7 +238,7 @@ export default function ReaderPage() {
   }, [])
 
   const handleBackToTop = useCallback(() => {
-    // Try multiple selectors to find the scrollable content
+    // Find scrollable content
     const selectors = [
       '[data-chapter-content]',
       '.overflow-y-auto',
@@ -248,22 +248,22 @@ export default function ReaderPage() {
     for (const selector of selectors) {
       const element = document.querySelector(selector) as HTMLElement
       if (element) {
-        // Check if element is actually scrollable
+        // Check if scrollable
         if (element.scrollHeight > element.clientHeight) {
-          // Temporarily disable CSS smooth scrolling to prevent conflicts
+          // Disable CSS smooth scrolling
           const originalScrollBehavior = element.style.scrollBehavior
           element.style.scrollBehavior = 'auto'
           
-          // Custom smooth scroll with ease-out animation
+          // Custom smooth scroll
           const startPosition = element.scrollTop
           const distance = startPosition
-          const duration = Math.min(800, Math.max(300, distance * 0.5)) // Dynamic duration based on distance
+          const duration = Math.min(800, Math.max(300, distance * 0.5))
           let startTime: number | null = null
 
           const easeInOutCubic = (t: number): number => {
             return t < 0.5 
-              ? 4 * t * t * t  // Ease-in cubic
-              : 1 - Math.pow(-2 * t + 2, 3) / 2  // Ease-out cubic
+              ? 4 * t * t * t
+              : 1 - Math.pow(-2 * t + 2, 3) / 2
           }
 
           const animation = (currentTime: number) => {
@@ -277,7 +277,7 @@ export default function ReaderPage() {
             if (progress < 1) {
               requestAnimationFrame(animation)
             } else {
-              // Restore original scroll behavior after animation completes
+              // Restore scroll behavior
               element.style.scrollBehavior = originalScrollBehavior
             }
           }
@@ -289,7 +289,7 @@ export default function ReaderPage() {
       }
     }
     
-    // Fallback: scroll the window with custom animation
+    // Fallback: scroll window
     const startPosition = window.pageYOffset
     const distance = startPosition
     const duration = Math.min(800, Math.max(300, distance * 0.5))
@@ -297,8 +297,8 @@ export default function ReaderPage() {
 
     const easeInOutCubic = (t: number): number => {
       return t < 0.5 
-        ? 4 * t * t * t  // Ease-in cubic
-        : 1 - Math.pow(-2 * t + 2, 3) / 2  // Ease-out cubic
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2
     }
 
     const animation = (currentTime: number) => {
@@ -333,7 +333,7 @@ export default function ReaderPage() {
   const currentChapter = chapters[currentChapterIndex]
   const overallProgress = Math.min(((currentChapterIndex + scrollProgress / 100) / chapters.length) * 100, 100)
 
-  // Determine display title consistent with TOC grouping
+  // Determine display title
   let displayChapterTitle = currentChapter?.title || ""
   if (tocChapters && tocChapters.length > 0) {
     const tocGroup = tocChapters.find(

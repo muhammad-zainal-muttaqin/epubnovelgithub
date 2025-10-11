@@ -1,4 +1,4 @@
-// Core types for Novel Reader application
+// Core types
 
 export interface Book {
   id: string

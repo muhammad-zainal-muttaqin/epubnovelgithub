@@ -1,4 +1,4 @@
-// IndexedDB wrapper using vanilla IDB API
+// IndexedDB wrapper
 
 import { DB_NAME, DB_VERSION, STORES } from "../keys"
 

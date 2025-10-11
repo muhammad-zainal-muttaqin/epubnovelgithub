@@ -1,4 +1,4 @@
-// Book repository for CRUD operations
+// Book repository
 
 import { STORES } from "../keys"
 import type { Book } from "../types"

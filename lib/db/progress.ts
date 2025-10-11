@@ -1,4 +1,4 @@
-// Progress repository for tracking reading progress
+// Progress repository
 
 import { STORES } from "../keys"
 import type { Progress } from "../types"

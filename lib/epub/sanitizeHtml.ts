@@ -1,4 +1,4 @@
-// HTML sanitizer for EPUB content
+// HTML sanitizer
 
 const ALLOWED_TAGS = new Set([
   "p",
@@ -79,7 +79,7 @@ function sanitizeNode(node: Node): void {
         if (!ALLOWED_ATTRIBUTES.has(attr.name)) {
           element.removeAttribute(attr.name)
         } else {
-          // Check for dangerous protocols in href/src
+          // Check dangerous protocols
           if (attr.name === "href" || attr.name === "src") {
             const value = attr.value.toLowerCase().trim()
             if (DANGEROUS_PROTOCOLS.some((protocol) => value.startsWith(protocol))) {
@@ -89,14 +89,14 @@ function sanitizeNode(node: Node): void {
         }
       })
 
-      // Remove inline event handlers
+      // Remove event handlers
       Array.from(element.attributes).forEach((attr) => {
         if (attr.name.startsWith("on")) {
           element.removeAttribute(attr.name)
         }
       })
 
-      // Recursively sanitize children
+      // Sanitize children
       sanitizeNode(child)
     } else if (child.nodeType === Node.COMMENT_NODE) {
       nodesToRemove.push(child)
