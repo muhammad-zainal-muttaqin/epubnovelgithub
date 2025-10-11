@@ -248,22 +248,59 @@ export default function ReaderPage() {
     for (const selector of selectors) {
       const element = document.querySelector(selector) as HTMLElement
       if (element) {
-        console.log('[BackToTop] Found element:', selector, 'scrollHeight:', element.scrollHeight, 'clientHeight:', element.clientHeight)
-        
         // Check if element is actually scrollable
         if (element.scrollHeight > element.clientHeight) {
-          element.scrollTo({ top: 0, behavior: 'smooth' })
-          console.log('[BackToTop] Scrolled using selector:', selector)
+          // Custom smooth scroll with ease-out animation
+          const startPosition = element.scrollTop
+          const distance = startPosition
+          const duration = Math.min(800, Math.max(300, distance * 0.5)) // Dynamic duration based on distance
+          let startTime: number | null = null
+
+          const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3) // Ease-out cubic function
+
+          const animation = (currentTime: number) => {
+            if (startTime === null) startTime = currentTime
+            const timeElapsed = currentTime - startTime
+            const progress = Math.min(timeElapsed / duration, 1)
+            
+            const easedProgress = easeOutCubic(progress)
+            element.scrollTop = startPosition - (distance * easedProgress)
+            
+            if (progress < 1) {
+              requestAnimationFrame(animation)
+            }
+          }
+          
+          requestAnimationFrame(animation)
+          console.log('[BackToTop] Custom smooth scroll started')
           return
-        } else {
-          console.log('[BackToTop] Element not scrollable, trying next selector')
         }
       }
     }
     
-    // Fallback: scroll the window
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-    console.log('[BackToTop] Fallback: scrolled window')
+    // Fallback: scroll the window with custom animation
+    const startPosition = window.pageYOffset
+    const distance = startPosition
+    const duration = Math.min(800, Math.max(300, distance * 0.5))
+    let startTime: number | null = null
+
+    const easeOutCubic = (t: number): number => 1 - Math.pow(1 - t, 3)
+
+    const animation = (currentTime: number) => {
+      if (startTime === null) startTime = currentTime
+      const timeElapsed = currentTime - startTime
+      const progress = Math.min(timeElapsed / duration, 1)
+      
+      const easedProgress = easeOutCubic(progress)
+      window.scrollTo(0, startPosition - (distance * easedProgress))
+      
+      if (progress < 1) {
+        requestAnimationFrame(animation)
+      }
+    }
+    
+    requestAnimationFrame(animation)
+    console.log('[BackToTop] Fallback: custom window scroll')
   }, [])
 
   if (isLoading) {
