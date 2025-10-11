@@ -250,10 +250,11 @@ export default function ReaderPage() {
       if (element) {
         // Check if element is actually scrollable
         if (element.scrollHeight > element.clientHeight) {
-          // Add class to disable CSS smooth scrolling during custom animation
-          element.classList.add('no-smooth-scroll')
+          // Temporarily disable CSS smooth scrolling to prevent conflicts
+          const originalScrollBehavior = element.style.scrollBehavior
+          element.style.scrollBehavior = 'auto'
           
-          // Custom smooth scroll with ease-in-out animation
+          // Custom smooth scroll with ease-out animation
           const startPosition = element.scrollTop
           const distance = startPosition
           const duration = Math.min(800, Math.max(300, distance * 0.5)) // Dynamic duration based on distance
@@ -276,8 +277,8 @@ export default function ReaderPage() {
             if (progress < 1) {
               requestAnimationFrame(animation)
             } else {
-              // Remove the class to re-enable CSS smooth scrolling
-              element.classList.remove('no-smooth-scroll')
+              // Restore original scroll behavior after animation completes
+              element.style.scrollBehavior = originalScrollBehavior
             }
           }
           
