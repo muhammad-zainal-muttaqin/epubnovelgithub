@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { BookOpen, Upload, Moon, Sun } from "lucide-react"
+import { BookOpen, Upload, Moon, Sun, Shield } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { useState, useEffect } from "react"
@@ -40,91 +40,93 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <main className="container mx-auto px-4 py-16">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-            Your Personal{" "}
-            <span className="text-primary">EPUB Library</span>
-          </h1>
-          <p className="mt-6 text-lg leading-8 text-muted-foreground max-w-2xl mx-auto">
-            A beautiful and comfortable EPUB reader built with modern web technologies. 
-            Upload your favorite novels and enjoy reading with customizable settings.
-          </p>
-          <div className="mt-10">
-            <Button size="lg" onClick={() => router.push("/library")}>
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-20">
+        <div className="max-w-4xl mx-auto text-center">
+          {/* Hero */}
+          <div className="mb-16">
+            <h1 className="text-5xl font-bold tracking-tight mb-6">
+              Your Personal{" "}
+              <span className="text-primary">EPUB Library</span>
+            </h1>
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              A beautiful, privacy-first EPUB reader that keeps your books local and secure. 
+              No cloud, no tracking, just pure reading experience.
+            </p>
+            <Button size="lg" onClick={() => router.push("/library")} className="text-lg px-8 py-6">
               <Upload className="mr-2 h-5 w-5" />
               Start Reading
             </Button>
           </div>
-        </div>
 
-        {/* Features */}
-        <div className="mt-24">
-          <h2 className="text-3xl font-bold text-center mb-12">Features</h2>
-          <div className="grid gap-8 md:grid-cols-3">
-            <div className="text-center p-6 rounded-lg border">
+          {/* Key Features */}
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
+            <div className="p-6">
               <BookOpen className="h-12 w-12 mx-auto mb-4 text-primary" />
-              <h3 className="text-xl font-semibold mb-2">Easy Reading</h3>
-              <p className="text-muted-foreground">
-                Clean, distraction-free interface optimized for comfortable reading experience.
+              <h3 className="text-lg font-semibold mb-2">Clean Reading</h3>
+              <p className="text-muted-foreground text-sm">
+                Distraction-free interface optimized for comfortable reading
               </p>
             </div>
-            <div className="text-center p-6 rounded-lg border">
+            <div className="p-6">
               <Upload className="h-12 w-12 mx-auto mb-4 text-primary" />
-              <h3 className="text-xl font-semibold mb-2">Customizable</h3>
-              <p className="text-muted-foreground">
-                Adjust font size, family, line height, and text alignment to your preference.
+              <h3 className="text-lg font-semibold mb-2">Fully Customizable</h3>
+              <p className="text-muted-foreground text-sm">
+                Adjust fonts, sizes, alignment, and themes to your preference
               </p>
             </div>
-            <div className="text-center p-6 rounded-lg border">
-              <Moon className="h-12 w-12 mx-auto mb-4 text-primary" />
-              <h3 className="text-xl font-semibold mb-2">Dark Mode</h3>
-              <p className="text-muted-foreground">
-                Switch between light and dark themes for comfortable reading in any environment.
+            <div className="p-6">
+              <Shield className="h-12 w-12 mx-auto mb-4 text-primary" />
+              <h3 className="text-lg font-semibold mb-2">Privacy First</h3>
+              <p className="text-muted-foreground text-sm">
+                All data stays local in your browser - no cloud, no tracking
               </p>
             </div>
           </div>
-        </div>
 
-        {/* Privacy Section */}
-        <div className="mt-24">
-          <h2 className="text-3xl font-bold text-center mb-12">Privacy First</h2>
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="p-8 rounded-lg border bg-muted/50">
-              <h3 className="text-xl font-semibold mb-4">Your Data Stays Local</h3>
-              <p className="text-muted-foreground mb-4">
-                All your EPUB files and reading progress are stored locally in your browser using IndexedDB. 
-                No data is sent to external servers or cloud services.
-              </p>
-              <div className="grid gap-4 md:grid-cols-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Files stored locally in browser</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>No data collection or tracking</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>No external API calls</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span>Open source and transparent</span>
-                </div>
+          {/* Privacy Highlight */}
+          <div className="bg-muted/30 rounded-2xl p-8 mb-16">
+            <Shield className="h-16 w-16 mx-auto mb-6 text-primary" />
+            <h2 className="text-2xl font-bold mb-4">Your Data, Your Device</h2>
+            <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+              Everything is stored locally in your browser. No external servers, no data collection, 
+              no privacy concerns. Your EPUB files and reading progress never leave your device.
+            </p>
+            <div className="flex justify-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Local storage only</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>No tracking</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>Open source</span>
               </div>
             </div>
+          </div>
+
+          {/* CTA */}
+          <div>
+            <h2 className="text-2xl font-bold mb-4">Ready to Start?</h2>
+            <p className="text-muted-foreground mb-6">
+              Upload your first EPUB and begin your private reading journey.
+            </p>
+            <Button size="lg" onClick={() => router.push("/library")} className="text-lg px-8 py-6">
+              <Upload className="mr-2 h-5 w-5" />
+              Upload Your First Book
+            </Button>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t mt-24">
+      <footer className="border-t">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center text-muted-foreground">
-            <p className="mb-2">&copy; 2025 EPUB Novel Reader. Built with Next.js 15 and Tailwind CSS 4.</p>
+            <p className="mb-2">&copy; 2025 EPUB Novel Reader</p>
             <Button variant="link" onClick={() => router.push("/privacy")} className="text-muted-foreground">
               Privacy Policy
             </Button>
