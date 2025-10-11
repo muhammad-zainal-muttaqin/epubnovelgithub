@@ -246,11 +246,18 @@ export default function ReaderPage() {
     ]
     
     for (const selector of selectors) {
-      const element = document.querySelector(selector)
+      const element = document.querySelector(selector) as HTMLElement
       if (element) {
-        element.scrollTo({ top: 0, behavior: 'smooth' })
-        console.log('[BackToTop] Scrolled using selector:', selector)
-        return
+        console.log('[BackToTop] Found element:', selector, 'scrollHeight:', element.scrollHeight, 'clientHeight:', element.clientHeight)
+        
+        // Check if element is actually scrollable
+        if (element.scrollHeight > element.clientHeight) {
+          element.scrollTo({ top: 0, behavior: 'smooth' })
+          console.log('[BackToTop] Scrolled using selector:', selector)
+          return
+        } else {
+          console.log('[BackToTop] Element not scrollable, trying next selector')
+        }
       }
     }
     
