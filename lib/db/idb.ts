@@ -61,6 +61,7 @@ export async function initDB(): Promise<IDBDatabase> {
         const folderStore = db.createObjectStore(STORES.FOLDERS, { keyPath: "id" })
         folderStore.createIndex("createdAt", "createdAt", { unique: false })
         folderStore.createIndex("sortOrder", "sortOrder", { unique: false })
+        folderStore.createIndex("slug", "slug", { unique: true })
       }
     }
   })

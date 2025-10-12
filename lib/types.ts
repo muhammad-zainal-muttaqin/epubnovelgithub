@@ -19,6 +19,7 @@ export interface Book {
 export interface Folder {
   id: string
   name: string
+  slug?: string
   createdAt: number
   sortOrder: number
 }

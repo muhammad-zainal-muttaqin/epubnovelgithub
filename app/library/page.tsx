@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { getBooksByFolder, getAllBooks, getBook, type SortBy } from "@/lib/db/books"
 import { deleteBook, updateBook } from "@/lib/db/books"
 import { deleteChaptersByBook } from "@/lib/db/chapters"
@@ -33,6 +34,7 @@ export default function LibraryPage() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     setMounted(true)
@@ -60,9 +62,19 @@ export default function LibraryPage() {
     }
   }
 
+  // Sync currentFolderId with URL query param `folder`
   useEffect(() => {
+    const folderSlug = searchParams.get("folder")
+    if (folderSlug) {
+      // find folder by slug and set id
+      ;(async () => {
+        const f = await (await import("@/lib/db/folders")).getFolderBySlug(folderSlug)
+        if (f) setCurrentFolderId(f.id)
+      })()
+    }
+
     loadData()
-  }, [currentFolderId, sortBy])
+  }, [searchParams, sortBy])
 
   const handleDeleteBook = async (bookId: string) => {
     setIsLoading(true)
@@ -180,11 +192,18 @@ export default function LibraryPage() {
   }
 
   const handleOpenFolder = (folderId: string) => {
+    const folder = folders.find((f) => f.id === folderId)
     setCurrentFolderId(folderId)
+    if (folder?.slug) {
+      router.push(`/library?folder=${encodeURIComponent(folder.slug)}`, { scroll: false })
+    } else {
+      router.push(`/library`, { scroll: false })
+    }
   }
 
   const handleBackToRoot = () => {
     setCurrentFolderId(null)
+    router.push(`/library`, { scroll: false })
   }
 
   const handleMoveBook = (bookId: string) => {
