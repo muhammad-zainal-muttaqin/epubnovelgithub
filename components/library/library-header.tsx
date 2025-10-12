@@ -1,8 +1,9 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Home, ChevronRight, FolderPlus, ArrowUpDown, ArrowLeft, Menu } from "lucide-react"
+import { Home, ChevronRight, FolderPlus, ArrowUpDown, ArrowLeft } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { MobileMenu } from "./mobile-menu"
 import type { SortBy } from "@/lib/db/books"
 
 interface LibraryHeaderProps {
@@ -33,7 +34,35 @@ export function LibraryHeader({
 }: LibraryHeaderProps) {
   return (
     <div className="container mx-auto max-w-5xl flex items-center justify-between">
-      <div className="flex items-center gap-4">
+      {/* Mobile: Burger menu */}
+      <div className="flex md:hidden items-center gap-2">
+        <MobileMenu
+          currentFolderName={currentFolderName}
+          bookCount={bookCount}
+          onBackToRoot={onBackToRoot}
+          onHomeClick={onHomeClick}
+          onCreateFolder={onCreateFolder}
+          sortBy={sortBy}
+          onSortChange={onSortChange}
+        />
+        <div className="flex items-baseline gap-2">
+          {currentFolderName ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Library</span>
+              <ChevronRight className="h-4 w-4" />
+              <span className="text-lg font-semibold text-foreground">{currentFolderName}</span>
+            </div>
+          ) : (
+            <h1 className="text-lg font-semibold">Library</h1>
+          )}
+          <span className="text-xs text-muted-foreground">
+            {bookCount} {bookCount === 1 ? "item" : "items"}
+          </span>
+        </div>
+      </div>
+
+      {/* Desktop: Full layout */}
+      <div className="hidden md:flex items-center gap-4 flex-1">
         <Button 
           variant="outline" 
           size="icon" 
@@ -71,59 +100,38 @@ export function LibraryHeader({
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        {/* Desktop controls */}
-        <div className="hidden sm:flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <ArrowUpDown className="h-4 w-4" />
-                <span className="hidden sm:inline">{sortLabels[sortBy]}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onSortChange("name")}>
-                {sortLabels.name}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onSortChange("addedAt")}>
-                {sortLabels.addedAt}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onSortChange("lastReadAt")}>
-                {sortLabels.lastReadAt}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onSortChange("progress")}>
-                {sortLabels.progress}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
 
-          {!currentFolderName && (
-            <Button variant="outline" size="sm" onClick={onCreateFolder} className="gap-2">
-              <FolderPlus className="h-4 w-4" />
-              <span className="hidden sm:inline">New Folder</span>
+      {/* Desktop: Actions */}
+      <div className="hidden md:flex items-center gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <ArrowUpDown className="h-4 w-4" />
+              <span className="hidden sm:inline">{sortLabels[sortBy]}</span>
             </Button>
-          )}
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onSortChange("name")}>
+              {sortLabels.name}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onSortChange("addedAt")}>
+              {sortLabels.addedAt}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onSortChange("lastReadAt")}>
+              {sortLabels.lastReadAt}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onSortChange("progress")}>
+              {sortLabels.progress}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-        {/* Mobile hamburger */}
-        <div className="sm:hidden">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-9 w-9">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onSortChange("name")}>{sortLabels.name}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onSortChange("addedAt")}>{sortLabels.addedAt}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onSortChange("lastReadAt")}>{sortLabels.lastReadAt}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onSortChange("progress")}>{sortLabels.progress}</DropdownMenuItem>
-              {!currentFolderName && (
-                <DropdownMenuItem onClick={onCreateFolder}>Create Folder</DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {!currentFolderName && (
+          <Button variant="outline" size="sm" onClick={onCreateFolder} className="gap-2">
+            <FolderPlus className="h-4 w-4" />
+            <span className="hidden sm:inline">New Folder</span>
+          </Button>
+        )}
       </div>
     </div>
   )
