@@ -202,6 +202,14 @@ export default function LibraryPage() {
     const bookId = movingBook.id
 
     // Close dialog first and allow UI to settle before heavy async work
+    if (typeof window !== "undefined") {
+      try {
+        const active = document.activeElement as HTMLElement | null
+        if (active && typeof active.blur === "function") active.blur()
+      } catch (e) {
+        console.warn("blur failed", e)
+      }
+    }
     setMoveBookOpen(false)
     setMovingBook(null)
 
