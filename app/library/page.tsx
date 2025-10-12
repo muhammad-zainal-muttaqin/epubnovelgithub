@@ -207,11 +207,45 @@ export default function LibraryPage() {
 
     try {
       // wait a bit to let the dialog overlay/animation finish so it doesn't block clicks
-      await new Promise((res) => setTimeout(res, 180))
+      await new Promise((res) => setTimeout(res, 300))
       setIsLoading(true)
 
+      const oldFolderId = movingBook.folderId || null
+
       await updateBook(bookId, { folderId: folderId || undefined })
-      await loadData()
+
+      // Optimistically update local state to avoid heavy reload blocking the UI
+      setAllBooks((prev) =>
+        prev.map((b) => (b.id === bookId ? { ...b, folderId: folderId || undefined } : b))
+      )
+
+      if (currentFolderId === null) {
+        // we're viewing root (no folder)
+        if (folderId) {
+          // moved from root into a folder -> remove from displayed books
+          setBooks((prev) => prev.filter((b) => b.id !== bookId))
+        } else {
+          // root->root or update metadata
+          setBooks((prev) => prev.map((b) => (b.id === bookId ? { ...b, folderId: undefined } : b)))
+        }
+      } else {
+        // viewing a specific folder
+        if (folderId === currentFolderId) {
+          // moved into current folder -> add/update
+          setBooks((prev) => {
+            const exists = prev.some((b) => b.id === bookId)
+            if (exists) return prev.map((b) => (b.id === bookId ? { ...b, folderId: folderId || undefined } : b))
+            const book = allBooks.find((b) => b.id === bookId)
+            return book ? [ ...prev, { ...book, folderId: folderId || undefined } ] : prev
+          })
+        } else {
+          // moved out of current folder -> remove
+          setBooks((prev) => prev.filter((b) => b.id !== bookId))
+        }
+      }
+
+      // reload in background to ensure consistency, but don't await to keep UI responsive
+      loadData().catch((e) => console.error("Background reload failed:", e))
 
       toast({
         title: "Book moved",
@@ -224,10 +258,8 @@ export default function LibraryPage() {
         description: "Failed to move book",
         variant: "destructive",
       })
-      // ensure data is consistent
-      try {
-        await loadData()
-      } catch (_) {}
+      // attempt to reload to recover
+      try { await loadData() } catch (_) {}
     } finally {
       setIsLoading(false)
     }
