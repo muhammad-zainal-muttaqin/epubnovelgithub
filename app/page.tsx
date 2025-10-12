@@ -91,23 +91,30 @@ export default function HomePage() {
             <Shield className="h-16 w-16 mx-auto mb-6 text-primary" />
             <h2 className="text-2xl font-bold mb-4">Your Data, Your Device</h2>
             <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-              Everything is stored locally in your browser. No external servers, no data collection, 
-              no privacy concerns. Your EPUB files and reading progress never leave your device.
+              Everything is stored locally in your browser. No servers, no tracking, 
+              no data collection. Your files never leave your device.
             </p>
-            <div className="flex justify-center gap-6 text-sm">
+            <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-sm mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>Local storage only</span>
+                <span>100% Local</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>No tracking</span>
+                <span>Zero Tracking</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>Open source</span>
+                <span>Open Source</span>
               </div>
             </div>
+            <Button 
+              variant="link" 
+              onClick={() => router.push("/privacy")}
+              className="text-sm text-primary hover:underline"
+            >
+              Learn more about our privacy practices →
+            </Button>
           </div>
 
         </div>

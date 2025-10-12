@@ -91,8 +91,8 @@ export default function PrivacyPage() {
                 and processing happens in your browser, not on external servers.
               </p>
               <p>
-                <strong className="text-foreground">No External Dependencies:</strong> The app doesn't 
-                make any external API calls that could compromise your data.
+                <strong className="text-foreground">No External API Calls:</strong> The app doesn't 
+                make any external API calls that could transmit or compromise your data.
               </p>
               <p>
                 <strong className="text-foreground">Open Source:</strong> The entire codebase is open source, 
@@ -117,6 +117,71 @@ export default function PrivacyPage() {
                 <strong className="text-foreground">No Server Communication:</strong> The app runs entirely 
                 in your browser and doesn't communicate with any external servers.
               </div>
+            </div>
+          </section>
+
+          {/* Third-Party & External Resources */}
+          <section className="p-6 rounded-lg border">
+            <h2 className="text-2xl font-semibold mb-4">Third-Party Resources</h2>
+            <div className="space-y-4 text-muted-foreground">
+              <p>
+                <strong className="text-foreground">Static Assets Only:</strong> All fonts, styles, 
+                and resources are bundled with the application. We don't load assets from external CDNs.
+              </p>
+              <p>
+                <strong className="text-foreground">No Third-Party Scripts:</strong> We don't use 
+                Google Analytics, Facebook Pixel, or any third-party tracking scripts.
+              </p>
+              <p>
+                <strong className="text-foreground">Hosting Platform:</strong> The application is hosted 
+                on a web platform. While the app itself doesn't collect data, the hosting provider may 
+                collect standard server logs (IP addresses, access times) for infrastructure purposes only.
+              </p>
+            </div>
+          </section>
+
+          {/* Data Deletion */}
+          <section className="p-6 rounded-lg border">
+            <h2 className="text-2xl font-semibold mb-4">Data Deletion</h2>
+            <div className="space-y-4 text-muted-foreground">
+              <p>
+                <strong className="text-foreground">Complete Control:</strong> Since all data is stored 
+                locally in your browser, you have full control over deletion.
+              </p>
+              <p>
+                <strong className="text-foreground">How to Delete:</strong> You can clear your data by:
+              </p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>Clearing your browser's site data/storage for this website</li>
+                <li>Clearing your browser's cache and cookies</li>
+                <li>Using your browser's developer tools to delete IndexedDB data</li>
+              </ul>
+              <p>
+                <strong className="text-foreground">Permanent Deletion:</strong> Once you clear your 
+                browser data, all your EPUB files and reading progress are permanently deleted from your device. 
+                We cannot recover them as we never had access to them.
+              </p>
+            </div>
+          </section>
+
+          {/* Browser Considerations */}
+          <section className="p-6 rounded-lg border">
+            <h2 className="text-2xl font-semibold mb-4">Browser & Device Considerations</h2>
+            <div className="space-y-4 text-muted-foreground">
+              <p>
+                <strong className="text-foreground">Browser Privacy:</strong> While our application 
+                doesn't collect data, your browser itself (Chrome, Firefox, Safari, etc.) may have 
+                its own tracking or telemetry features. Please check your browser's privacy settings.
+              </p>
+              <p>
+                <strong className="text-foreground">Incognito/Private Mode:</strong> Using private/incognito 
+                mode will prevent data persistence. Your books and progress will be deleted when you close 
+                the private browsing session.
+              </p>
+              <p>
+                <strong className="text-foreground">Multiple Devices:</strong> Since data is stored locally, 
+                your library and progress are device-specific and won't sync across devices automatically.
+              </p>
             </div>
           </section>
 
