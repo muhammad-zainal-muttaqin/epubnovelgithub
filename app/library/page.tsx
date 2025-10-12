@@ -194,7 +194,11 @@ export default function LibraryPage() {
 
   const handleRenameFolder = (folderId: string, currentName: string) => {
     setEditingFolder({ id: folderId, name: currentName })
-    setCreateFolderOpen(true)
+    // blur active element and delay opening to avoid popover focus/aria-hidden conflicts
+    if (typeof window !== "undefined") {
+      try { document.activeElement instanceof HTMLElement && document.activeElement.blur() } catch {}
+    }
+    setTimeout(() => setCreateFolderOpen(true), 80)
   }
 
   const handleOpenFolder = (folderId: string) => {
