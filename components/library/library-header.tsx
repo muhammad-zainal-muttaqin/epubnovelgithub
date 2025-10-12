@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Home, ChevronRight, FolderPlus, ArrowUpDown, ArrowLeft } from "lucide-react"
+import { Home, ChevronRight, FolderPlus, ArrowUpDown, ArrowLeft, Menu } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import type { SortBy } from "@/lib/db/books"
 
@@ -72,35 +72,58 @@ export function LibraryHeader({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
-              <ArrowUpDown className="h-4 w-4" />
-              <span className="hidden sm:inline">{sortLabels[sortBy]}</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onSortChange("name")}>
-              {sortLabels.name}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onSortChange("addedAt")}>
-              {sortLabels.addedAt}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onSortChange("lastReadAt")}>
-              {sortLabels.lastReadAt}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onSortChange("progress")}>
-              {sortLabels.progress}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Desktop controls */}
+        <div className="hidden sm:flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <ArrowUpDown className="h-4 w-4" />
+                <span className="hidden sm:inline">{sortLabels[sortBy]}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onSortChange("name")}>
+                {sortLabels.name}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onSortChange("addedAt")}>
+                {sortLabels.addedAt}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onSortChange("lastReadAt")}>
+                {sortLabels.lastReadAt}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onSortChange("progress")}>
+                {sortLabels.progress}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-        {!currentFolderName && (
-          <Button variant="outline" size="sm" onClick={onCreateFolder} className="gap-2">
-            <FolderPlus className="h-4 w-4" />
-            <span className="hidden sm:inline">New Folder</span>
-          </Button>
-        )}
+          {!currentFolderName && (
+            <Button variant="outline" size="sm" onClick={onCreateFolder} className="gap-2">
+              <FolderPlus className="h-4 w-4" />
+              <span className="hidden sm:inline">New Folder</span>
+            </Button>
+          )}
+        </div>
+
+        {/* Mobile hamburger */}
+        <div className="sm:hidden">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onSortChange("name")}>{sortLabels.name}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onSortChange("addedAt")}>{sortLabels.addedAt}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onSortChange("lastReadAt")}>{sortLabels.lastReadAt}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onSortChange("progress")}>{sortLabels.progress}</DropdownMenuItem>
+              {!currentFolderName && (
+                <DropdownMenuItem onClick={onCreateFolder}>Create Folder</DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </div>
   )
