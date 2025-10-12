@@ -65,10 +65,13 @@ export default function LibraryPage() {
   }, [currentFolderId, sortBy])
 
   const handleDeleteBook = async (bookId: string) => {
+    setIsLoading(true)
+    
     try {
       await deleteBook(bookId)
       await deleteChaptersByBook(bookId)
-      setBooks((prev) => prev.filter((b) => b.id !== bookId))
+      await loadData()
+      
       toast({
         title: "Book deleted",
         description: "The book has been removed from your library",
@@ -80,21 +83,29 @@ export default function LibraryPage() {
         description: "Failed to delete the book",
         variant: "destructive",
       })
+      await loadData()
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const handleCreateFolder = async (name: string) => {
+    const isEditing = !!editingFolder
+    const folderId = editingFolder?.id
+
+    setCreateFolderOpen(false)
+    setEditingFolder(null)
+
     try {
-      if (editingFolder) {
-        await updateFolder(editingFolder.id, { name })
+      if (isEditing && folderId) {
+        await updateFolder(folderId, { name })
         setFolders((prev) =>
-          prev.map((f) => (f.id === editingFolder.id ? { ...f, name } : f))
+          prev.map((f) => (f.id === folderId ? { ...f, name } : f))
         )
         toast({
           title: "Folder renamed",
           description: `Folder renamed to "${name}"`,
         })
-        setEditingFolder(null)
       } else {
         const newFolder: Folder = {
           id: `folder-${Date.now()}`,
@@ -129,17 +140,22 @@ export default function LibraryPage() {
         )
         if (!shouldDelete) return
 
+        setIsLoading(true)
+        
         for (const book of booksInFolder) {
           await updateBook(book.id, { folderId: undefined })
         }
+      } else {
+        setIsLoading(true)
       }
 
       await deleteFolderDb(folderId)
-      setFolders((prev) => prev.filter((f) => f.id !== folderId))
       
       if (currentFolderId === folderId) {
         setCurrentFolderId(null)
       }
+
+      await loadData()
 
       toast({
         title: "Folder deleted",
@@ -152,6 +168,9 @@ export default function LibraryPage() {
         description: "Failed to delete folder",
         variant: "destructive",
       })
+      await loadData()
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -179,16 +198,21 @@ export default function LibraryPage() {
   const handleMoveBookSubmit = async (folderId: string | null) => {
     if (!movingBook) return
 
+    const bookTitle = movingBook.title
+    const bookId = movingBook.id
+
+    setMoveBookOpen(false)
+    setMovingBook(null)
+    setIsLoading(true)
+
     try {
-      await updateBook(movingBook.id, { folderId: folderId || undefined })
+      await updateBook(bookId, { folderId: folderId || undefined })
+      await loadData()
       
       toast({
         title: "Book moved",
-        description: `"${movingBook.title}" has been moved`,
+        description: `"${bookTitle}" has been moved`,
       })
-      
-      setMovingBook(null)
-      await loadData()
     } catch (error) {
       console.error("Error moving book:", error)
       toast({
@@ -196,6 +220,9 @@ export default function LibraryPage() {
         description: "Failed to move book",
         variant: "destructive",
       })
+      await loadData()
+    } finally {
+      setIsLoading(false)
     }
   }
 
