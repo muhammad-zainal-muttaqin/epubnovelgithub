@@ -32,7 +32,6 @@ export function ReaderHeader({ bookTitle, chapterTitle, progress, onSettingsClic
   }, [bookFolderId])
 
   const handleBackClick = () => {
-    router.refresh() // Force a refresh of the destination page
     if (folderSlug) {
       // Navigate back to the specific folder using slug
       router.push(`/library?folder=${folderSlug}`)

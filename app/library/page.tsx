@@ -38,12 +38,12 @@ export default function LibraryPage() {
     setMounted(true)
   }, [])
 
-  // Reload data when sortBy changes
+  // Reload data when sortBy or currentFolderId changes
   useEffect(() => {
     if (mounted) {
       loadData()
     }
-  }, [sortBy, mounted])
+  }, [sortBy, currentFolderId, mounted])
 
   const loadData = async () => {
     try {
@@ -77,12 +77,17 @@ export default function LibraryPage() {
       // find folder by slug and set id
       ;(async () => {
         const f = await (await import("@/lib/db/folders")).getFolderBySlug(folderSlug)
-        if (f) setCurrentFolderId(f.id)
+        if (f) {
+          setCurrentFolderId(f.id)
+        } else {
+          // Invalid folder slug, redirect to library root
+          router.replace("/library")
+        }
       })()
+    } else {
+      setCurrentFolderId(null)
     }
-
-    loadData()
-  }, [searchParams, sortBy])
+  }, [searchParams])
 
   const handleDeleteBook = async (bookId: string) => {
     setIsLoading(true)
