@@ -82,7 +82,7 @@ export function BookCard({ book, onDelete, onMove }: BookCardProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     {onMove && (
-                      <DropdownMenuItem onClick={handleMove}>
+                      <DropdownMenuItem onClick={() => setTimeout(handleMove, 50)}>
                         <FolderInput className="mr-2 h-4 w-4" />
                         Move to Folder
                       </DropdownMenuItem>
