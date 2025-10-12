@@ -23,7 +23,7 @@ export default function LibraryPage() {
   const [allBooks, setAllBooks] = useState<Book[]>([])
   const [folders, setFolders] = useState<Folder[]>([])
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<SortBy>("lastReadAt")
+  const [sortBy, setSortBy] = useState<SortBy>("name")
   const [sortByLoaded, setSortByLoaded] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [createFolderOpen, setCreateFolderOpen] = useState(false)
