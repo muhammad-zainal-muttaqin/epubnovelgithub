@@ -300,29 +300,40 @@
     @apply my-8 border-border;
   }
 
+<<<<<<< HEAD
   /* ==========================================================================
      VIEW TRANSITION API - SHIGURE UI THEME TRANSITIONS
      ========================================================================== */
 
   /* View transition group timing */
+=======
+  /* View Transition API - Shigure UI */
+>>>>>>> 6cf17ddf581142407133686d401cff41b90f20c8
   ::view-transition-group(root) {
     animation-timing-function: var(--expo-in);
   }
 
+<<<<<<< HEAD
   /* New theme transition with Shigure UI GIF mask */
+=======
+>>>>>>> 6cf17ddf581142407133686d401cff41b90f20c8
   ::view-transition-new(root) {
     mask: url('https://media.tenor.com/cyORI7kwShQAAAAi/shigure-ui-dance.gif') center / 0 no-repeat;
     animation: shigure-scale 3s;
     animation-fill-mode: both;
   }
 
+<<<<<<< HEAD
   /* Old theme transition */
+=======
+>>>>>>> 6cf17ddf581142407133686d401cff41b90f20c8
   ::view-transition-old(root),
   .dark::view-transition-old(root) {
     animation: shigure-scale 3s;
     animation-fill-mode: both;
   }
 
+<<<<<<< HEAD
   /* Shigure UI scale animation keyframes */
   @keyframes shigure-scale {
     0% {
@@ -336,6 +347,20 @@
     }
     100% {
       mask-size: 10000vmax; /* GIF expands to cover entire screen */
+=======
+  @keyframes shigure-scale {
+    0% {
+      mask-size: 0;
+    }
+    10% {
+      mask-size: 50vmax;
+    }
+    90% {
+      mask-size: 50vmax;
+    }
+    100% {
+      mask-size: 10000vmax;
+>>>>>>> 6cf17ddf581142407133686d401cff41b90f20c8
     }
   }
 }
