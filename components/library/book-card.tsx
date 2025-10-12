@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { BookOpen, Trash2, MoreVertical } from "lucide-react"
+import { BookOpen, Trash2, MoreVertical, FolderInput } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import type { Book } from "@/lib/types"
 import { useRouter } from "next/navigation"
@@ -10,9 +10,10 @@ import { useRouter } from "next/navigation"
 interface BookCardProps {
   book: Book
   onDelete: (bookId: string) => void
+  onMove?: (bookId: string) => void
 }
 
-export function BookCard({ book, onDelete }: BookCardProps) {
+export function BookCard({ book, onDelete, onMove }: BookCardProps) {
   const router = useRouter()
 
   const handleRead = () => {
@@ -24,6 +25,12 @@ export function BookCard({ book, onDelete }: BookCardProps) {
   const handleDelete = () => {
     if (confirm(`Are you sure you want to delete "${book.title}"?`)) {
       onDelete(book.id)
+    }
+  }
+
+  const handleMove = () => {
+    if (onMove) {
+      onMove(book.id)
     }
   }
 
@@ -74,7 +81,13 @@ export function BookCard({ book, onDelete }: BookCardProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleDelete} variant="destructive">
+                    {onMove && (
+                      <DropdownMenuItem onClick={handleMove}>
+                        <FolderInput className="mr-2 h-4 w-4" />
+                        Move to Folder
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={handleDelete} className="text-destructive">
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
                     </DropdownMenuItem>
