@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getBooksByFolder, getAllBooks, type SortBy } from "@/lib/db/books"
+import { getBooksByFolder, getAllBooks, getBook, type SortBy } from "@/lib/db/books"
 import { deleteBook, updateBook } from "@/lib/db/books"
 import { deleteChaptersByBook } from "@/lib/db/chapters"
 import { getAllFolders, saveFolder, deleteFolder as deleteFolderDb, updateFolder } from "@/lib/db/folders"
@@ -188,11 +188,37 @@ export default function LibraryPage() {
   }
 
   const handleMoveBook = (bookId: string) => {
-    const book = books.find((b) => b.id === bookId)
+    const book = books.find((b) => b.id === bookId) || allBooks.find((b) => b.id === bookId)
     if (book) {
       setMovingBook(book)
       setMoveBookOpen(true)
+      return
     }
+
+    // If not found in memory, try to fetch from DB (covers just-uploaded-but-not-yet-in-state race)
+    ;(async () => {
+      try {
+        const bookFromDb = await getBook(bookId)
+        if (bookFromDb) {
+          setMovingBook(bookFromDb)
+          setMoveBookOpen(true)
+        } else {
+          console.warn("Book not found for move:", bookId)
+          toast({
+            title: "Book not found",
+            description: "Please refresh the page and try again",
+            variant: "destructive",
+          })
+        }
+      } catch (err) {
+        console.error("Error fetching book for move:", err)
+        toast({
+          title: "Error",
+          description: "Failed to load book",
+          variant: "destructive",
+        })
+      }
+    })()
   }
 
   const handleMoveBookSubmit = async (folderId: string | null) => {
