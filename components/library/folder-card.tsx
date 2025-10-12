@@ -29,7 +29,7 @@ export function FolderCard({ folder, bookCount, bookCovers, onClick, onRename, o
   }
 
   return (
-    <Card className="group overflow-hidden transition-all hover:shadow-lg cursor-pointer" onClick={onClick}>
+    <Card className="group overflow-hidden transition-all hover:shadow-lg cursor-pointer" onClick={onClick} role="button">
       <CardContent className="p-0">
         <div className="flex gap-4 p-4">
           <div className="relative h-40 w-28 flex-shrink-0 overflow-hidden rounded-md bg-muted">

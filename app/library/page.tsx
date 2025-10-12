@@ -111,13 +111,18 @@ export default function LibraryPage() {
     try {
       if (isEditing && folderId) {
         await updateFolder(folderId, { name })
-        setFolders((prev) =>
-          prev.map((f) => (f.id === folderId ? { ...f, name } : f))
-        )
+        // reload folders to get updated slug
+        await loadData()
         toast({
           title: "Folder renamed",
           description: `Folder renamed to "${name}"`,
         })
+        // if we're viewing this folder, update URL to use new slug
+        if (currentFolderId === folderId) {
+          const updated = (await import("@/lib/db/folders")).getFolder(folderId)
+          const f = await updated
+          if (f?.slug) router.push(`/library?folder=${encodeURIComponent(f.slug)}`, { scroll: false })
+        }
       } else {
         const newFolder: Folder = {
           id: `folder-${Date.now()}`,
@@ -126,7 +131,8 @@ export default function LibraryPage() {
           sortOrder: folders.length,
         }
         await saveFolder(newFolder)
-        setFolders((prev) => [...prev, newFolder])
+        // reload to include slug
+        await loadData()
         toast({
           title: "Folder created",
           description: `Folder "${name}" has been created`,
