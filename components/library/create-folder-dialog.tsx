@@ -53,7 +53,6 @@ export function CreateFolderDialog({
     }
 
     onSubmit(trimmedName)
-    onOpenChange(false)
   }
 
   return (

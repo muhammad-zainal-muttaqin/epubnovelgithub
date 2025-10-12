@@ -36,7 +36,6 @@ export function MoveBookDialog({
 
   const handleSubmit = () => {
     onMove(selectedFolderId)
-    onOpenChange(false)
   }
 
   return (
@@ -50,7 +49,7 @@ export function MoveBookDialog({
         </DialogHeader>
 
         <ScrollArea className="max-h-[400px] pr-4">
-          <RadioGroup value={selectedFolderId || "none"} onValueChange={(value) => setSelectedFolderId(value === "none" ? null : value)}>
+          <RadioGroup value={selectedFolderId || "none"} onValueChange={(value: string) => setSelectedFolderId(value === "none" ? null : value)}>
             <div className="space-y-3 py-4">
               <div className="flex items-center space-x-3 rounded-lg border p-3 hover:bg-muted/50 transition-colors">
                 <RadioGroupItem value="none" id="none" />
