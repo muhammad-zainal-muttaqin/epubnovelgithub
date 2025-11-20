@@ -19,9 +19,6 @@ export function UploadButton({ onUploadComplete, className, children, currentFol
     const file = e.target.files?.[0]
     if (!file) return
 
-    console.log("Starting EPUB upload:", file.name, "Size:", file.size)
-
-    // Validate type
     if (!file.name.endsWith(".epub")) {
       toast({
         title: "Invalid file type",
@@ -31,7 +28,6 @@ export function UploadButton({ onUploadComplete, className, children, currentFol
       return
     }
 
-    // Validate size
     if (file.size > 50 * 1024 * 1024) {
       toast({
         title: "File too large",
@@ -44,21 +40,13 @@ export function UploadButton({ onUploadComplete, className, children, currentFol
     setIsUploading(true)
 
     try {
-      console.log("Parsing EPUB...")
       const { book, chapters, tocChapters } = await parseEPUB(file, currentFolderId)
-      console.log("EPUB parsed successfully:", book.title, "Chapters:", chapters.length)
 
-      // Save to IndexedDB
-      console.log("Saving book to IndexedDB...")
       await saveBook(book)
-      console.log("Book saved, now saving chapters...")
       await saveChapters(chapters)
-      console.log("All data saved successfully")
       
-      // Save TOC chapters
       if (tocChapters && tocChapters.length > 0) {
         localStorage.setItem(`toc-chapters-${book.id}`, JSON.stringify(tocChapters))
-        console.log("TOC chapters saved to localStorage:", tocChapters.length)
       }
 
       toast({
@@ -76,7 +64,6 @@ export function UploadButton({ onUploadComplete, className, children, currentFol
       })
     } finally {
       setIsUploading(false)
-      // Reset input
       e.target.value = ""
     }
   }

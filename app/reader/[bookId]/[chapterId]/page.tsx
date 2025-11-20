@@ -16,6 +16,7 @@ import { ProgressBar } from "@/components/reader/progress-bar"
 import { SettingsDialog } from "@/components/reader/settings-dialog"
 import { Loader2 } from "lucide-react"
 import { Toaster } from "@/components/ui/toaster"
+import { toast } from "sonner"
 
 export default function ReaderPage() {
   const params = useParams()
@@ -29,7 +30,6 @@ export default function ReaderPage() {
   const [tocChapters, setTocChapters] = useState<TOCChapter[]>([])
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0)
   const [settings, setSettings] = useState<ReaderSettings>(() => {
-    // Load settings from localStorage
     if (typeof window !== "undefined") {
       const savedSettings = localStorage.getItem(STORAGE_KEYS.READER_SETTINGS)
       if (savedSettings) {
@@ -43,35 +43,29 @@ export default function ReaderPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
-  // Load settings from localStorage
+  const [translatedContent, setTranslatedContent] = useState<string | null>(null)
+  const [isTranslating, setIsTranslating] = useState(false)
+  const [currentLanguage, setCurrentLanguage] = useState<string>("")
+  const [translationCache, setTranslationCache] = useState<Record<string, string>>({})
+
   useEffect(() => {
     const savedSettings = localStorage.getItem(STORAGE_KEYS.READER_SETTINGS)
     if (savedSettings) {
       setSettings(JSON.parse(savedSettings))
-      console.log("[v0] Settings loaded from localStorage")
     }
   }, [])
 
-  // Load book and chapters
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log("[v0] Loading reader data for book:", bookId)
-
         const bookData = await getBook(bookId)
-        console.log("[v0] Book data loaded:", bookData)
-
         if (!bookData) {
-          console.error("[v0] Book not found, redirecting to library")
           router.push("/library")
           return
         }
 
         const chaptersData = await getChaptersByBook(bookId)
-        console.log("[v0] Chapters loaded:", chaptersData.length)
-
         if (chaptersData.length === 0) {
-          console.error("[v0] No chapters found, redirecting to library")
           router.push("/library")
           return
         }
@@ -80,24 +74,18 @@ export default function ReaderPage() {
         setChapters(chaptersData)
 
         const chapterIndex = Number.parseInt(chapterId)
-        console.log("[v0] Chapter index:", chapterIndex)
-
         if (chapterIndex >= 0 && chapterIndex < chaptersData.length) {
           setCurrentChapterIndex(chapterIndex)
-          console.log("[v0] Current chapter set to:", chapterIndex)
         } else {
-          console.warn("[v0] Invalid chapter index, using 0")
           setCurrentChapterIndex(0)
         }
         
-        // Load TOC chapters
         const savedTOCChapters = localStorage.getItem(`toc-chapters-${bookId}`)
         if (savedTOCChapters) {
           setTocChapters(JSON.parse(savedTOCChapters))
-          console.log("[v0] TOC chapters loaded from localStorage")
         }
       } catch (error) {
-        console.error("[v0] Error loading reader data:", error)
+        console.error("Error loading reader data:", error)
         router.push("/library")
       } finally {
         setIsLoading(false)
@@ -105,18 +93,18 @@ export default function ReaderPage() {
     }
 
     loadData()
-  }, [bookId, router]) // Removed chapterId from dependencies
+  }, [bookId, router])
 
-  // Update chapter index when URL changes
   useEffect(() => {
     const chapterIndex = Number.parseInt(chapterId)
     if (!isNaN(chapterIndex) && chapterIndex >= 0 && chapters.length > 0 && chapterIndex < chapters.length) {
       setCurrentChapterIndex(chapterIndex)
       setScrollProgress(0)
+      setTranslatedContent(null)
+      setCurrentLanguage("")
     }
   }, [chapterId, chapters.length])
 
-  // Save progress
   useEffect(() => {
     if (!book || chapters.length === 0) return
 
@@ -144,15 +132,12 @@ export default function ReaderPage() {
     return () => clearTimeout(timer)
   }, [book, chapters, currentChapterIndex, scrollProgress])
 
-  // Save settings
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.READER_SETTINGS, JSON.stringify(settings))
   }, [settings])
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore input fields
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
 
       switch (e.key) {
@@ -244,8 +229,73 @@ export default function ReaderPage() {
     setSettings((prev) => ({ ...prev, ...updates }))
   }, [])
 
+  const handleTranslate = useCallback(async (targetLang: string) => {
+    const currentChapter = chapters[currentChapterIndex]
+    if (!currentChapter) return
+
+    if (currentLanguage === targetLang && translatedContent) return
+    
+    const cacheKey = `${currentChapter.id}-${targetLang}`
+    if (translationCache[cacheKey]) {
+      setTranslatedContent(translationCache[cacheKey])
+      setCurrentLanguage(targetLang)
+      toast.success(`Loaded translation from cache`)
+      return
+    }
+
+    if (!settings.apiKey) {
+      setSettingsOpen(true)
+      toast.error("API Key Required", { description: "Please enter your Gemini API Key in settings." })
+      return
+    }
+
+    setIsTranslating(true)
+    try {
+      const imgTags: string[] = []
+      const contentWithPlaceholders = currentChapter.content.replace(/<img[^>]*>/g, (match) => {
+        imgTags.push(match)
+        return `__IMG_PLACEHOLDER_${imgTags.length - 1}__`
+      })
+
+      const response = await fetch("/api/translate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-google-api-key": settings.apiKey,
+        },
+        body: JSON.stringify({
+          text: contentWithPlaceholders,
+          targetLang,
+          bookTitle: book?.title || "",
+          chapterTitle: displayChapterTitle,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Translation failed")
+      }
+
+      let restoredContent = data.translatedText
+      imgTags.forEach((tag, index) => {
+        const placeholderRegex = new RegExp(`__\\s*IMG_PLACEHOLDER_${index}\\s*__`, "gi")
+        restoredContent = restoredContent.replace(placeholderRegex, tag)
+      })
+
+      setTranslatedContent(restoredContent)
+      setCurrentLanguage(targetLang)
+      setTranslationCache(prev => ({ ...prev, [cacheKey]: restoredContent }))
+      toast.success(`Translated to ${targetLang}`)
+    } catch (error: any) {
+      console.error("Translation error:", error)
+      toast.error("Translation Failed", { description: error.message })
+    } finally {
+      setIsTranslating(false)
+    }
+  }, [chapters, currentChapterIndex, settings.apiKey, currentLanguage, translatedContent])
+
   const handleBackToTop = useCallback(() => {
-    // Find scrollable content
     const selectors = [
       '[data-chapter-content]',
       '.overflow-y-auto',
@@ -254,49 +304,41 @@ export default function ReaderPage() {
     
     for (const selector of selectors) {
       const element = document.querySelector(selector) as HTMLElement
-      if (element) {
-        // Check if scrollable
-        if (element.scrollHeight > element.clientHeight) {
-          // Disable CSS smooth scrolling
-          const originalScrollBehavior = element.style.scrollBehavior
-          element.style.scrollBehavior = 'auto'
-          
-          // Custom smooth scroll
-          const startPosition = element.scrollTop
-          const distance = startPosition
-          const duration = Math.min(800, Math.max(300, distance * 0.5))
-          let startTime: number | null = null
+      if (element && element.scrollHeight > element.clientHeight) {
+        const originalScrollBehavior = element.style.scrollBehavior
+        element.style.scrollBehavior = 'auto'
+        
+        const startPosition = element.scrollTop
+        const distance = startPosition
+        const duration = Math.min(800, Math.max(300, distance * 0.5))
+        let startTime: number | null = null
 
-          const easeInOutCubic = (t: number): number => {
-            return t < 0.5 
-              ? 4 * t * t * t
-              : 1 - Math.pow(-2 * t + 2, 3) / 2
-          }
-
-          const animation = (currentTime: number) => {
-            if (startTime === null) startTime = currentTime
-            const timeElapsed = currentTime - startTime
-            const progress = Math.min(timeElapsed / duration, 1)
-            
-            const easedProgress = easeInOutCubic(progress)
-            element.scrollTop = startPosition - (distance * easedProgress)
-            
-            if (progress < 1) {
-              requestAnimationFrame(animation)
-            } else {
-              // Restore scroll behavior
-              element.style.scrollBehavior = originalScrollBehavior
-            }
-          }
-          
-          requestAnimationFrame(animation)
-          console.log('[BackToTop] Custom smooth scroll started')
-          return
+        const easeInOutCubic = (t: number): number => {
+          return t < 0.5 
+            ? 4 * t * t * t
+            : 1 - Math.pow(-2 * t + 2, 3) / 2
         }
+
+        const animation = (currentTime: number) => {
+          if (startTime === null) startTime = currentTime
+          const timeElapsed = currentTime - startTime
+          const progress = Math.min(timeElapsed / duration, 1)
+          
+          const easedProgress = easeInOutCubic(progress)
+          element.scrollTop = startPosition - (distance * easedProgress)
+          
+          if (progress < 1) {
+            requestAnimationFrame(animation)
+          } else {
+            element.style.scrollBehavior = originalScrollBehavior
+          }
+        }
+        
+        requestAnimationFrame(animation)
+        return
       }
     }
     
-    // Fallback: scroll window
     const startPosition = window.pageYOffset
     const distance = startPosition
     const duration = Math.min(800, Math.max(300, distance * 0.5))
@@ -322,7 +364,6 @@ export default function ReaderPage() {
     }
     
     requestAnimationFrame(animation)
-    console.log('[BackToTop] Fallback: custom window scroll')
   }, [])
 
   if (isLoading) {
@@ -340,7 +381,6 @@ export default function ReaderPage() {
   const currentChapter = chapters[currentChapterIndex]
   const overallProgress = Math.min(((currentChapterIndex + scrollProgress / 100) / chapters.length) * 100, 100)
 
-  // Determine display title
   let displayChapterTitle = currentChapter?.title || ""
   if (tocChapters && tocChapters.length > 0) {
     const tocGroup = tocChapters.find(
@@ -361,11 +401,15 @@ export default function ReaderPage() {
         progress={overallProgress}
         onSettingsClick={() => setSettingsOpen(true)}
         bookFolderId={book.folderId}
+        apiKey={settings.apiKey}
+        isTranslating={isTranslating}
+        currentLanguage={currentLanguage}
+        onTranslate={handleTranslate}
       />
 
       <main className="flex-1">
         <ChapterContent
-          content={currentChapter.content}
+          content={translatedContent || currentChapter.content}
           fontSize={settings.fontSize}
           fontFamily={settings.fontFamily}
           lineHeight={settings.lineHeight}

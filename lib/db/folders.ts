@@ -23,7 +23,6 @@ async function ensureUniqueSlug(name: string, existingId?: string) {
     try {
       const index = store.index("slug")
       const request = index.get(slug)
-      // wrap in promise to await
       const existing: any = await new Promise((resolve, reject) => {
         request.onsuccess = () => resolve(request.result)
         request.onerror = () => resolve(undefined)
@@ -33,7 +32,6 @@ async function ensureUniqueSlug(name: string, existingId?: string) {
         return slug
       }
     } catch (e) {
-      // if index doesn't exist, just return base
       return slug
     }
 
@@ -74,7 +72,6 @@ export async function getFolderBySlug(slug: string): Promise<Folder | undefined>
 }
 
 export async function saveFolder(folder: Folder): Promise<void> {
-  // ensure slug and uniqueness
   folder.slug = await ensureUniqueSlug(folder.name, folder.id)
   await putInStore(STORES.FOLDERS, folder)
 }

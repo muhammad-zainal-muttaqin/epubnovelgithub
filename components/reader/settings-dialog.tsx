@@ -4,7 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 import type { ReaderSettings } from "@/lib/types"
+import { ExternalLink } from "lucide-react"
 
 interface SettingsDialogProps {
   open: boolean
@@ -22,6 +24,33 @@ export function SettingsDialog({ open, onOpenChange, settings, onSettingsChange 
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          {/* Gemini API Key */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="apiKey">Google Gemini API Key</Label>
+              <a
+                href="https://aistudio.google.com/app/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline flex items-center gap-1"
+              >
+                Get API Key <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+            <Input
+              id="apiKey"
+              type="password"
+              placeholder="Enter your Gemini API Key"
+              value={settings.apiKey || ""}
+              onChange={(e) => onSettingsChange({ apiKey: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              Required for translation. Stored locally on your device.
+            </p>
+          </div>
+
+          <div className="h-px bg-border" />
+
           {/* Font Size */}
           <div className="space-y-2">
             <Label>Font Size: {settings.fontSize}px</Label>

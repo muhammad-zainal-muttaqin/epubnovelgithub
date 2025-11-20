@@ -37,11 +37,10 @@ export function splitChapter(content: string): ChapterChunk[] {
       })
       currentChunk = []
       currentWordCount = 0
+      }
     }
-  }
 
-  // Add remaining
-  if (currentChunk.length > 0) {
+    if (currentChunk.length > 0) {
     chunks.push({
       index: chunks.length,
       content: currentChunk.join(" "),

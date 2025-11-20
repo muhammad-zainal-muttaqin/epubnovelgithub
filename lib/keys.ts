@@ -25,4 +25,5 @@ export const DEFAULT_SETTINGS: import("./types").ReaderSettings = {
   lineHeight: 1.7,
   maxWidth: 700,
   textAlign: "justify",
+  apiKey: "",
 }

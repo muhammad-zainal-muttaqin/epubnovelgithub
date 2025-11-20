@@ -1,8 +1,15 @@
 # EPUB Novel Reader
 
-A modern, privacy-first web application for reading EPUB novels with a clean interface and comprehensive customization features.
+A modern, privacy-first web application for reading EPUB novels with a clean interface and comprehensive customization features. Now powered with **AI Translation**.
 
 ## ✨ Features
+
+### 🤖 AI Translation (New!)
+- **Context-Aware Translation**: Translates novels to your preferred language using Google Gemini AI.
+- **Genre-Smart**: Automatically detects genre (Light Novel, Wuxia, Western) to adapt tone and terminology.
+- **BYOK (Bring Your Own Key)**: Securely use your own Google Gemini API Key.
+- **Instant Caching**: Fast navigation for previously translated chapters without re-fetching.
+- **Image Protection**: Ensures illustrations remain intact during translation.
 
 ### 📚 Core Reading
 - **EPUB Support**: Upload and read EPUB files with full chapter navigation
@@ -22,7 +29,7 @@ A modern, privacy-first web application for reading EPUB novels with a clean int
 ### 🔒 Privacy & Security
 - **100% Local**: All data stored in browser IndexedDB
 - **Zero Tracking**: No analytics, cookies, or external servers
-- **No Upload**: Files never leave your device
+- **No Upload**: Files never leave your device (except partial text sent to Google AI only when using Translate feature)
 - **Open Source**: Fully transparent and verifiable code
 
 ### 📱 User Experience
@@ -40,24 +47,24 @@ A modern, privacy-first web application for reading EPUB novels with a clean int
 ### Installation
 
 1. **Clone the repository**
-   \`\`\`bash
+   ```bash
    git clone <repository-url>
    cd epubnovelreader
-   \`\`\`
+   ```
 
 2. **Install dependencies**
-   \`\`\`bash
+   ```bash
    bun install
    # or
    npm install
-   \`\`\`
+   ```
 
 3. **Start development server**
-   \`\`\`bash
+   ```bash
    bun dev
    # or
    npm run dev
-   \`\`\`
+   ```
 
 4. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
@@ -69,6 +76,13 @@ A modern, privacy-first web application for reading EPUB novels with a clean int
 2. **Browse Library**: View all your uploaded books with progress indicators
 3. **Start Reading**: Click "Read" or "Continue" to open a book
 4. **Customize Settings**: Adjust fonts, themes, and layout preferences
+
+### AI Translation Guide
+1. Open a book in the Reader.
+2. Open **Settings (Gear Icon)** and enter your **Google Gemini API Key**.
+3. Click the **Translate Icon** in the header.
+4. Select your target language.
+5. Enjoy reading in your language with context-aware translation!
 
 ### Reading Controls
 - **Navigation**: Use Previous/Next buttons or chapter list
@@ -90,10 +104,13 @@ A modern, privacy-first web application for reading EPUB novels with a clean int
 - **UI Components**: Radix UI primitives
 - **Icons**: Lucide React icon library
 - **Storage**: IndexedDB for local data persistence
+- **AI**: Google Generative AI (Gemini) SDK
 - **Theme**: next-themes for dark/light mode support
 
 ## 🎯 Recent Updates
 
+- **AI Translation**: Integrated Google Gemini for high-quality, context-aware novel translation.
+- **Translation Caching**: Instant loading for previously translated chapters.
 - **Smart TOC Navigation**: Chapters grouped by Table of Contents structure, not just file order
 - **Internal Link Support**: Working navigation from TOC pages to specific chapters
 - **OpenDyslexic Font**: Added dyslexia-friendly font option
@@ -113,9 +130,9 @@ A modern, privacy-first web application for reading EPUB novels with a clean int
 ## 🚀 Deployment
 
 ### Deployment
-\`\`\`bash
+```bash
 bun run build
-\`\`\`
+```
 
 ### Other Platforms
 - **Netlify**: Supports Next.js with static export

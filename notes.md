@@ -1,6 +1,80 @@
 # Development Notes
 
-## Library Folder System Implementation
+## AI Translation Feature Implementation
+
+This document tracks the implementation of the AI-powered translation feature using Google Gemini.
+
+### Implementation Status: ✅ COMPLETED
+
+**Date:** November 2025
+**Status:** Feature-complete and tested
+
+---
+
+## Features Implemented
+
+### ✅ Core Translation
+- **Google Gemini Integration**: Uses `gemini-flash-lite-latest` for fast, cost-effective translation.
+- **BYOK (Bring Your Own Key)**: Users input their own API Key in Settings; stored locally in localStorage.
+- **Context-Aware**: Sends Book Title and Chapter Title to AI to improve genre detection and tone.
+- **HTML Preservation**: Strict prompt engineering to preserve paragraph structure, formatting, and classes.
+
+### ✅ Smart Caching & Performance
+- **In-Memory Caching**: Caches translated chapters during the session. Navigating back/forward is instant and costs zero tokens.
+- **Image Protection**: 
+  - Strips `<img>` tags before sending text to AI (saves token cost & prevents base64 corruption).
+  - Replaces them with placeholders (`__IMG_PLACEHOLDER_X__`).
+  - Restores original image tags after translation.
+
+### ✅ User Experience
+- **Visual Indicators**: 
+  - "Translating..." pulsing badge in header.
+  - "Indonesian" (Language Name) green badge when viewing translated content.
+- **Seamless Integration**: "Translate" button in Reader Header with language dropdown.
+- **Auto-Reset**: Translation automatically resets to original when navigating to a new chapter (unless cached).
+
+### ✅ Prompt Engineering
+- **Role**: Professional Literary Translator.
+- **Guidelines**:
+  - **Transcreation**: Focus on natural flow and "translating the experience".
+  - **Cultural Adaptation**: Keep Honorifics (San, Kun, Hyung, Oppa) and Cultivation Terms (Qi, Dao) in Romaji based on context.
+  - **Voice Consistency**: Maintain character personality (rude, polite, archaic).
+
+---
+
+## Technical Challenges & Solutions
+
+### 🐛 Base64 Image Corruption
+**Symptom:** Images disappeared or turned into broken text after translation.
+**Cause:** LLM tried to "translate" or shorten the massive Base64 strings in `src="..."`.
+**Solution:** 
+1. Regex replace `<img ...>` with `__IMG_PLACEHOLDER_X__` before sending to API.
+2. Instruct AI to **never** touch placeholders.
+3. Regex restore the images into the translated text.
+
+### 🧠 Context-Blind Translation
+**Symptom:** AI translated generic dialogue without knowing if it was a Fantasy or Modern setting.
+**Solution:** Added `bookTitle` and `chapterTitle` to the API payload and System Prompt. AI now infers genre from these titles.
+
+---
+
+## File Structure
+```
+app/api/translate/
+└── route.ts             # Next.js API Route for Gemini (Server-side)
+
+components/reader/
+├── translate-menu.tsx   # Dropdown UI for language selection
+├── reader-header.tsx    # Updated with Translate button & Status Badges
+└── settings-dialog.tsx  # Updated with API Key input field
+
+app/reader/[bookId]/[chapterId]/
+└── page.tsx             # Main logic: State, Caching, Image Protection, API Call
+```
+
+---
+
+## Library Folder System Implementation (Previous Feature)
 
 This document tracks the implementation progress of the folder system for organizing uploaded EPUBs in the library.
 
@@ -239,6 +313,5 @@ Key commits in `dev` branch:
 
 ---
 
-*Last Updated: December 2024*  
-*Branch: `dev`*  
+*Last Updated: November 2025*  
 *Status: Production Ready*

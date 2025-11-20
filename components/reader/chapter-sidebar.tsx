@@ -27,9 +27,6 @@ export function ChapterSidebar({
   tocChapters,
 }: ChapterSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("")
-
-  // Use TOC chapters or all chapters
-  console.log("[ChapterSidebar] tocChapters:", tocChapters?.length || 0, "chapters:", chapters.length)
   
   const chaptersToShow = tocChapters && tocChapters.length > 0 ? tocChapters : chapters.map(ch => ({
     id: ch.id,
@@ -38,8 +35,6 @@ export function ChapterSidebar({
     endIndex: ch.index,
     href: ch.href
   }))
-  
-  console.log("[ChapterSidebar] Showing:", chaptersToShow.length, "items")
 
   const filteredChapters = chaptersToShow.filter((chapter) => 
     chapter.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -72,7 +67,6 @@ export function ChapterSidebar({
               <div className="py-8 text-center text-sm text-muted-foreground">No chapters found</div>
             ) : (
               filteredChapters.map((chapter) => {
-                // Check chapter range
                 const isActive = currentChapterIndex >= chapter.startIndex && currentChapterIndex <= chapter.endIndex
                 
                 return (

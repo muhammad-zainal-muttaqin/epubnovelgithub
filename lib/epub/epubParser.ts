@@ -2,7 +2,6 @@ import JSZip from "jszip"
 import type { Book, Chapter } from "@/lib/types"
 import { sanitizeHtml } from "./sanitizeHtml"
 
-// Convert ArrayBuffer to base64
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer)
   let binary = ""
@@ -12,12 +11,10 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary)
 }
 
-// Normalize path
 function normalizePath(path: string): string {
   return path.replace(/^\.\//, "").replace(/\/+/g, "/")
 }
 
-// Resolve path
 function resolvePath(basePath: string, relativePath: string): string {
   const base = basePath.split("/").slice(0, -1)
   const relative = relativePath.split("/")
@@ -33,21 +30,17 @@ function resolvePath(basePath: string, relativePath: string): string {
   return base.join("/")
 }
 
-// TOC Item
 interface TOCItem {
   label: string
   href: string
   children?: TOCItem[]
 }
 
-// Parse TOC from nav.xhtml
 async function parseNavXhtml(zip: JSZip, navHref: string, basePath: string): Promise<TOCItem[]> {
-  console.log("Parsing nav.xhtml:", navHref)
   const navPath = resolvePath(basePath, navHref)
   const navFile = zip.file(navPath)
   
   if (!navFile) {
-    console.log("nav.xhtml not found:", navPath)
     return []
   }
 
@@ -55,10 +48,8 @@ async function parseNavXhtml(zip: JSZip, navHref: string, basePath: string): Pro
   const parser = new DOMParser()
   const navDoc = parser.parseFromString(navContent, "text/html")
   
-  // Find TOC nav element
   const tocNav = navDoc.querySelector('nav[*|type="toc"], nav#toc')
   if (!tocNav) {
-    console.log("TOC nav element not found in nav.xhtml")
     return []
   }
 
@@ -80,18 +71,14 @@ async function parseNavXhtml(zip: JSZip, navHref: string, basePath: string): Pro
     }
   })
 
-  console.log("Parsed", items.length, "items from nav.xhtml")
   return items
 }
 
-// Parse TOC from toc.ncx
 async function parseTocNcx(zip: JSZip, ncxHref: string, basePath: string): Promise<TOCItem[]> {
-  console.log("Parsing toc.ncx:", ncxHref)
   const ncxPath = resolvePath(basePath, ncxHref)
   const ncxFile = zip.file(ncxPath)
   
   if (!ncxFile) {
-    console.log("toc.ncx not found:", ncxPath)
     return []
   }
 
@@ -119,45 +106,35 @@ async function parseTocNcx(zip: JSZip, ncxHref: string, basePath: string): Promi
     }
   })
 
-  console.log("Parsed", items.length, "items from toc.ncx")
   return items
 }
 
-// Parse TOC from EPUB
 async function parseTOC(zip: JSZip, opfDoc: Document, basePath: string): Promise<TOCItem[]> {
-  console.log("=== Starting TOC parsing ===")
-  
-  // Try nav.xhtml first
   const navItem = opfDoc.querySelector('item[properties*="nav"]')
   if (navItem) {
     const navHref = navItem.getAttribute("href")
     if (navHref) {
       const items = await parseNavXhtml(zip, navHref, basePath)
       if (items.length > 0) {
-        console.log("TOC parsed from nav.xhtml")
         return items
       }
     }
   }
   
-  // Fallback to toc.ncx
   const tocItem = opfDoc.querySelector('item[media-type="application/x-dtbncx+xml"]')
   if (tocItem) {
     const tocHref = tocItem.getAttribute("href")
     if (tocHref) {
       const items = await parseTocNcx(zip, tocHref, basePath)
       if (items.length > 0) {
-        console.log("TOC parsed from toc.ncx")
         return items
       }
     }
   }
   
-  console.log("No TOC found, will use spine items")
   return []
 }
 
-// Rewrite internal EPUB links
 function rewriteInternalLinks(
   html: string,
   hrefToIndexMap: Map<string, number>,
@@ -165,57 +142,41 @@ function rewriteInternalLinks(
   currentChapterHref: string
 ): string {
   return html.replace(/<a([^>]*)href="([^"]*)"([^>]*)>/gi, (match, before, href, after) => {
-    // Skip external
     if (href.startsWith("http://") || href.startsWith("https://") || href.startsWith("//")) {
       return match
     }
 
-    // Skip protocols
     if (href.includes(":") && !href.startsWith("#")) {
       return match
     }
 
-    // Handle anchor links
     if (href.startsWith("#")) {
       return match
     }
 
     try {
-      // Resolve href
       const currentDir = currentChapterHref.split("/").slice(0, -1).join("/")
       const resolvedHref = resolvePath(currentDir + "/", href)
       const normalizedHref = normalizePath(resolvedHref)
-      
-      // Split href/anchor
       const [baseHref, anchor] = normalizedHref.split("#")
-      
-      // Find chapter
       const chapterIndex = hrefToIndexMap.get(baseHref)
       
       if (chapterIndex !== undefined) {
-        // Rewrite route
         const newHref = `/reader/${bookId}/${chapterIndex}${anchor ? "#" + anchor : ""}`
         return `<a${before}href="${newHref}"${after}>`
       }
     } catch (error) {
-      console.log("Error rewriting link:", href, error)
+      console.error("Error rewriting link:", href, error)
     }
 
-    // Keep original
     return match
   })
 }
 
-// Extract images
 async function extractImages(zip: JSZip, opfContent: string, basePath: string): Promise<Map<string, string>> {
-  console.log("=== Starting image extraction ===")
   const imageMap = new Map<string, string>()
-
-  // Find image items
   const manifestRegex = /<item[^>]*media-type="image\/[^"]*"[^>]*>/g
   const matches = opfContent.match(manifestRegex) || []
-
-  console.log("Found", matches.length, "image items in manifest")
 
   for (const match of matches) {
     const hrefMatch = match.match(/href="([^"]*)"/)
@@ -225,19 +186,15 @@ async function extractImages(zip: JSZip, opfContent: string, basePath: string): 
     const fullPath = resolvePath(basePath, href)
     const normalizedPath = normalizePath(fullPath)
 
-    console.log("Processing image:", href, "->", normalizedPath)
-
     try {
       const imageFile = zip.file(normalizedPath)
       if (!imageFile) {
-        console.log("✗ Image file not found:", normalizedPath)
         continue
       }
 
       const imageData = await imageFile.async("arraybuffer")
       const base64 = arrayBufferToBase64(imageData)
 
-      // Determine MIME
       const ext = normalizedPath.split(".").pop()?.toLowerCase()
       const mimeType =
         ext === "jpg" || ext === "jpeg"
@@ -251,76 +208,51 @@ async function extractImages(zip: JSZip, opfContent: string, basePath: string): 
                 : "image/jpeg"
 
       const dataUrl = `data:${mimeType};base64,${base64}`
-
-      // Store normalized path
       const storeKey = normalizePath(href)
       imageMap.set(storeKey, dataUrl)
-      console.log("✓ Image stored:", storeKey)
     } catch (error) {
       console.error("Error extracting image:", normalizedPath, error)
     }
   }
 
-  console.log("=== Image extraction complete:", imageMap.size, "images ===")
   return imageMap
 }
 
-// Replace image paths
 function replaceImagePaths(html: string, imageMap: Map<string, string>, chapterHref: string): string {
-  console.log("=== Replacing image paths in chapter:", chapterHref, "===")
-
   const chapterDir = chapterHref.split("/").slice(0, -1).join("/")
-  let replacedCount = 0
 
-  const result = html.replace(/<img[^>]*src="([^"]*)"[^>]*>/g, (match, src) => {
-    console.log("Found img tag with src:", src)
-
-    // Resolve path
+  return html.replace(/<img[^>]*src="([^"]*)"[^>]*>/g, (match, src) => {
     let resolvedPath = src
 
     if (src.startsWith("../") || src.startsWith("./") || !src.startsWith("http")) {
-      // Resolve relative path
       resolvedPath = resolvePath(chapterDir + "/", src)
       resolvedPath = normalizePath(resolvedPath)
-      console.log("Resolved relative path:", src, "->", resolvedPath)
     }
 
-    // Find in imageMap
     let dataUrl = imageMap.get(resolvedPath)
 
-    // Fallback without prefix
     if (!dataUrl) {
       const filename = resolvedPath.split("/").pop() || ""
       for (const [key, value] of imageMap.entries()) {
         if (key.endsWith(filename)) {
           dataUrl = value
-          console.log("✓ Found by filename:", filename, "->", key)
           break
         }
       }
     }
 
     if (dataUrl) {
-      replacedCount++
-      console.log("✓✓✓ IMAGE REPLACED:", src, "->", "data:image/...")
       return match.replace(src, dataUrl)
-    } else {
-      console.log("✗ Image NOT found in map:", resolvedPath)
-      return match
     }
-  })
 
-  console.log("=== Image replacement complete:", replacedCount, "images replaced ===")
-  return result
+    return match
+  })
 }
 
 export async function parseEPUB(file: File, folderId?: string | null): Promise<{ book: Book; chapters: Chapter[]; tocChapters: import("@/lib/types").TOCChapter[] }> {
-  console.log("=== Starting EPUB parsing ===")
-
   const arrayBuffer = await file.arrayBuffer()
   const zip = await JSZip.loadAsync(arrayBuffer)
 
-  // Find container
   const containerFile = zip.file("META-INF/container.xml")
   if (!containerFile) {
     throw new Error("Invalid EPUB: container.xml not found")
@@ -334,9 +266,7 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
 
   const opfPath = opfPathMatch[1]
   const basePath = opfPath.substring(0, opfPath.lastIndexOf("/") + 1)
-  console.log("OPF path:", opfPath, "Base path:", basePath)
 
-  // Read OPF
   const opfFile = zip.file(opfPath)
   if (!opfFile) {
     throw new Error("Invalid EPUB: OPF file not found")
@@ -346,23 +276,15 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
   const parser = new DOMParser()
   const opfDoc = parser.parseFromString(opfContent, "text/xml")
 
-  // Extract metadata
   const metadata = opfDoc.querySelector("metadata")
   const title = metadata?.querySelector("title")?.textContent || file.name.replace(".epub", "")
   const author = metadata?.querySelector("creator")?.textContent || "Unknown Author"
 
-  console.log("Book metadata:", { title, author })
-
-  // Parse TOC
   const tocItems = await parseTOC(zip, opfDoc, basePath)
-
-  // Extract images
   const imageMap = await extractImages(zip, opfContent, basePath)
 
-  // Extract cover
   let cover: string | undefined
 
-  // Strategy 1: metadata
   const coverMeta = opfDoc.querySelector('meta[name="cover"]')
   if (coverMeta) {
     const coverId = coverMeta.getAttribute("content")
@@ -373,36 +295,26 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
         if (coverHref) {
           const coverPath = normalizePath(resolvePath(basePath, coverHref))
           cover = imageMap.get(normalizePath(coverHref)) || imageMap.get(coverPath)
-          console.log("Cover found (strategy 1):", coverHref, "->", !!cover)
         }
       }
     }
   }
 
-  // Strategy 2: cover files
   if (!cover) {
     for (const [key, value] of imageMap.entries()) {
       if (key.toLowerCase().includes("cover")) {
         cover = value
-        console.log("Cover found (strategy 2):", key)
         break
       }
     }
   }
 
-  // Strategy 3: first image
   if (!cover && imageMap.size > 0) {
     cover = Array.from(imageMap.values())[0]
-    console.log("Cover found (strategy 3): using first image")
   }
 
-  console.log("Cover extracted:", !!cover)
-
-  // Extract chapters
   const spine = opfDoc.querySelector("spine")
   const spineItems = Array.from(spine?.querySelectorAll("itemref") || [])
-
-  console.log("Spine items found:", spineItems.length)
 
   const chapters: Chapter[] = []
   const bookId = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`
@@ -419,45 +331,31 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
     if (!href) continue
 
     const fullPath = resolvePath(basePath, href)
-    console.log("Processing chapter", i, ":", href, "->", fullPath)
 
     try {
       const chapterFile = zip.file(fullPath)
       if (!chapterFile) {
-        console.log("Chapter file not found:", fullPath)
         continue
       }
 
       let chapterContent = await chapterFile.async("text")
-
-      // Replace image paths
       chapterContent = replaceImagePaths(chapterContent, imageMap, href)
-
-      // Sanitize HTML
       const sanitized = sanitizeHtml(chapterContent)
 
-      // Extract title
       const chapterDoc = parser.parseFromString(chapterContent, "text/html")
-      
-      // Get title
       let chapterTitle = ""
       
-      // Strategy 1: headings
       const heading = chapterDoc.querySelector("h1, h2, h3")
       if (heading?.textContent && heading.textContent.trim()) {
         chapterTitle = heading.textContent.trim()
       }
       
-      // Strategy 2: other methods
       if (!chapterTitle || chapterTitle === title || chapterTitle.length > 100) {
-        // Extract from filename
         const filename = href.split("/").pop()?.replace(/\.(xhtml|html|xml)$/i, "") || ""
         
-        // Clean filename
         if (filename) {
           const lowerFilename = filename.toLowerCase()
           
-          // Convert patterns
           if (lowerFilename.includes("cover")) {
             chapterTitle = "Cover"
           } else if (lowerFilename.includes("copyright")) {
@@ -477,7 +375,6 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
           } else if (lowerFilename.includes("afterword")) {
             chapterTitle = "Afterword"
           } else if (lowerFilename.includes("insert") || lowerFilename.includes("illustration")) {
-            // Extract number
             const insertMatch = filename.match(/(\d+)/)
             if (insertMatch) {
               chapterTitle = `Insert ${insertMatch[1]}`
@@ -485,7 +382,6 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
               chapterTitle = "Insert"
             }
           } else if (lowerFilename.match(/^(ch|chap|chapter)[\s_-]*\d+/)) {
-            // Chapter filenames
             const numMatch = filename.match(/\d+/)
             if (numMatch) {
               const chapterNum = parseInt(numMatch[0], 10)
@@ -494,25 +390,20 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
               chapterTitle = filename.replace(/[\s_-]+/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
             }
           } else if (lowerFilename.match(/^apter[\s_-]*\d+/)) {
-            // Handle "apter" pattern
             const numMatch = filename.match(/\d+/)
             if (numMatch) {
               const chapterNum = parseInt(numMatch[0], 10)
               chapterTitle = `Chapter ${chapterNum}`
             }
           } else {
-            // Use filename
             chapterTitle = filename.replace(/[\s_-]+/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
           }
         }
       }
       
-      // Strategy 3: fallback
       if (!chapterTitle) {
         chapterTitle = `Chapter ${i + 1}`
       }
-
-      console.log("Chapter", i, "title extracted:", chapterTitle, "from:", href)
 
       chapters.push({
         id: `${bookId}-chapter-${i}`,
@@ -520,46 +411,33 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
         index: i,
         title: chapterTitle.trim(),
         content: sanitized,
-        href: normalizePath(href), // Store original href
+        href: normalizePath(href),
       })
-
-      console.log("Chapter", i, "processed:", chapterTitle)
     } catch (error) {
       console.error("Error processing chapter", i, ":", error)
     }
   }
 
-  // Build href mapping
-  console.log("=== Building href-to-index mapping ===")
   const hrefToIndexMap = new Map<string, number>()
   chapters.forEach((chapter, index) => {
-    // Relative href
     const baseHref = normalizePath(chapter.href.split("#")[0])
     hrefToIndexMap.set(baseHref, index)
 
-    // Map absolute href
     try {
       const absoluteHref = normalizePath(resolvePath(basePath, baseHref))
       hrefToIndexMap.set(absoluteHref, index)
     } catch {}
 
-    // Store with anchor
     hrefToIndexMap.set(chapter.href, index)
   })
-  console.log("Href-to-index mapping created:", hrefToIndexMap.size, "entries")
 
-  // Build TOC chapters
   const tocChapters: import("@/lib/types").TOCChapter[] = []
   if (tocItems.length > 0) {
-    console.log("=== Building TOC chapters structure ===")
-    console.log("TOC items:", tocItems.length)
-    
     tocItems.forEach((tocItem, i) => {
       const baseHref = normalizePath(tocItem.href.split("#")[0])
       const startIndex = hrefToIndexMap.get(baseHref)
       
       if (startIndex !== undefined) {
-        // Determine end index
         let endIndex = chapters.length - 1
         if (i < tocItems.length - 1) {
           const nextHref = normalizePath(tocItems[i + 1].href.split("#")[0])
@@ -578,42 +456,24 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
           href: tocItem.href
         })
         
-        // Mark spine items
         for (let idx = startIndex; idx <= endIndex; idx++) {
           if (chapters[idx]) {
             chapters[idx].tocChapterId = tocChapterId
           }
         }
-        
-        console.log("TOC Chapter:", tocItem.label, "→ spine range:", startIndex, "-", endIndex)
       }
     })
-    
-    console.log("Created", tocChapters.length, "TOC chapters")
   }
 
-  // Rewrite internal links
-  console.log("=== Rewriting internal links ===")
   for (const chapter of chapters) {
-    const originalContent = chapter.content
     chapter.content = rewriteInternalLinks(chapter.content, hrefToIndexMap, bookId, chapter.href)
-    
-    if (originalContent !== chapter.content) {
-      console.log("Links rewritten in chapter", chapter.index, ":", chapter.title)
-    }
   }
 
-  console.log("=== EPUB parsing complete ===")
-  console.log("Total chapters:", chapters.length)
-  console.log("Total images:", imageMap.size)
-  console.log("TOC items:", tocItems.length)
-
-  // Count story chapters
   const actualChapterCount = tocChapters.length > 0
     ? tocChapters.filter(toc => 
         toc.title.toLowerCase().includes("chapter") || 
         toc.title.match(/^(ch|chap)\s*\d+/i) ||
-        toc.title.match(/^\d+[.:]/i) // e.g., "1: Title", "1. Title"
+        toc.title.match(/^\d+[.:]/i)
       ).length
     : chapters.filter(ch => 
         ch.title.toLowerCase().includes("chapter") ||

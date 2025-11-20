@@ -27,7 +27,6 @@ export function ChapterContent({ content, fontSize, fontFamily, lineHeight, maxW
         const percentage = Math.min((scrollTop / scrollHeight) * 100, 100)
         onScroll(percentage)
       } else {
-        // Content fits in viewport
         onScroll(100)
       }
     }
@@ -35,7 +34,6 @@ export function ChapterContent({ content, fontSize, fontFamily, lineHeight, maxW
     const element = contentRef.current
     if (element) {
       element.addEventListener("scroll", handleScroll)
-      // Check initial position
       handleScroll()
       return () => element.removeEventListener("scroll", handleScroll)
     }
