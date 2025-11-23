@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     if (!apiKey) {
       return NextResponse.json(
         { error: "API Key is required" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -17,24 +17,26 @@ export async function POST(req: Request) {
     if (!text || !targetLang) {
       return NextResponse.json(
         { error: "Text and target language are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
+    const model = genAI.getGenerativeModel({
+      model: "gemini-flash-lite-latest",
+    });
 
     const prompt = `
       You are a professional literary translator specializing in fiction novels (Light Novels, Web Novels, Fantasy, Romance, etc.).
-      
+
       CONTEXT INFORMATION:
-      Book Title: "${bookTitle || 'Unknown'}"
-      Chapter Title: "${chapterTitle || 'Unknown'}"
+      Book Title: "${bookTitle || "Unknown"}"
+      Chapter Title: "${chapterTitle || "Unknown"}"
       (Use this context to infer the genre, setting, and character relationships.)
 
       CORE TASK:
-      Translate the following HTML content to ${targetLang}. 
-      
+      Translate the following HTML content to ${targetLang}.
+
       PRIMARY INSTRUCTION:
       Translate the text completely, naturally, and accurately. Maintain the original formatting, tone, and context. For technical terms, provide appropriate translations while keeping important keywords recognizable. Please keep the kinship terms and honorifics in the translation, and write them in romaji (or the source language's romanization) if they add to the cultural flavor.
 
@@ -81,7 +83,9 @@ export async function POST(req: Request) {
     const response = await result.response;
     let translatedText = response.text();
 
-    translatedText = translatedText.replace(/^```html\n/, "").replace(/\n```$/, "");
+    translatedText = translatedText
+      .replace(/^```html\n/, "")
+      .replace(/\n```$/, "");
     translatedText = translatedText.replace(/^```\n/, "").replace(/\n```$/, "");
 
     return NextResponse.json({ translatedText });
@@ -89,7 +93,7 @@ export async function POST(req: Request) {
     console.error("Translation error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to translate" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
