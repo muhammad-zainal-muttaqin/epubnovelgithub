@@ -32,6 +32,7 @@ export interface Chapter {
   content: string // sanitized HTML
   href: string // original href from spine
   tocChapterId?: string // ID of the TOC chapter this spine item belongs to
+  translations?: Record<string, string>
 }
 
 export interface TOCChapter {
@@ -80,4 +81,5 @@ export interface ReaderSettings {
   maxWidth: number // 600-800px
   textAlign: "left" | "center" | "right" | "justify"
   apiKey?: string
+  targetLanguage?: string
 }

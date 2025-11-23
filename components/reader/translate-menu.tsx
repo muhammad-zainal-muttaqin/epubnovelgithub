@@ -10,14 +10,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Languages, Loader2, Check } from "lucide-react"
+import { Languages, Loader2, Check, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 
 interface TranslateMenuProps {
   apiKey?: string
   isTranslating: boolean
   currentLanguage: string
-  onTranslate: (lang: string) => void
+  onTranslate: (lang: string, force?: boolean) => void
   onOpenSettings: () => void
 }
 
@@ -39,7 +39,12 @@ export function TranslateMenu({
   onTranslate,
   onOpenSettings,
 }: TranslateMenuProps) {
-  const handleTranslate = (langName: string) => {
+  const handleTranslate = (langName: string, force: boolean = false) => {
+    if (langName === "original") {
+      onTranslate(langName)
+      return
+    }
+
     if (!apiKey) {
       toast.error("API Key Missing", {
         description: "Please add your Google Gemini API Key in settings to use translation.",
@@ -50,7 +55,7 @@ export function TranslateMenu({
       })
       return
     }
-    onTranslate(langName)
+    onTranslate(langName, force)
   }
 
   return (
@@ -68,6 +73,28 @@ export function TranslateMenu({
         <DropdownMenuLabel>Translate to...</DropdownMenuLabel>
         <DropdownMenuSeparator />
         
+        <DropdownMenuItem
+          onClick={() => handleTranslate("original")}
+          className="flex items-center justify-between cursor-pointer font-medium"
+        >
+          Original
+          {!currentLanguage && <Check className="h-3 w-3" />}
+        </DropdownMenuItem>
+        
+        {currentLanguage && (
+          <DropdownMenuItem
+            onClick={() => handleTranslate(currentLanguage, true)}
+            className="flex items-center justify-between cursor-pointer text-muted-foreground hover:text-foreground"
+          >
+            <span className="flex items-center">
+              <RefreshCw className="h-3 w-3 mr-2" />
+              Re-translate {currentLanguage}
+            </span>
+          </DropdownMenuItem>
+        )}
+
+        <DropdownMenuSeparator />
+
         {!apiKey && (
           <DropdownMenuItem onClick={onOpenSettings} className="text-yellow-600 cursor-pointer">
             Set API Key First

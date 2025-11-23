@@ -9,13 +9,14 @@ export const STORAGE_KEYS = {
 } as const
 
 export const DB_NAME = "NovelReaderDB"
-export const DB_VERSION = 3
+export const DB_VERSION = 4
 
 export const STORES = {
   BOOKS: "books",
   CHAPTERS: "chapters",
   PROGRESS: "progress",
   FOLDERS: "folders",
+  TRANSLATIONS: "translations",
 } as const
 
 export const DEFAULT_SETTINGS: import("./types").ReaderSettings = {
@@ -26,4 +27,5 @@ export const DEFAULT_SETTINGS: import("./types").ReaderSettings = {
   maxWidth: 700,
   textAlign: "justify",
   apiKey: "",
+  targetLanguage: "",
 }

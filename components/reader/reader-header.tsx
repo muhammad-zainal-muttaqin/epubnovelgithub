@@ -17,7 +17,7 @@ interface ReaderHeaderProps {
   apiKey?: string
   isTranslating: boolean
   currentLanguage: string
-  onTranslate: (lang: string) => void
+  onTranslate: (lang: string, force?: boolean) => void
 }
 
 export function ReaderHeader({ 

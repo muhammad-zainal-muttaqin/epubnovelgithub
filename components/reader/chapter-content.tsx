@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import { Loader2 } from "lucide-react"
 
 interface ChapterContentProps {
   content: string
@@ -10,9 +11,10 @@ interface ChapterContentProps {
   maxWidth: number
   textAlign: "left" | "center" | "right" | "justify"
   onScroll?: (scrollPercentage: number) => void
+  isTranslating?: boolean
 }
 
-export function ChapterContent({ content, fontSize, fontFamily, lineHeight, maxWidth, textAlign, onScroll }: ChapterContentProps) {
+export function ChapterContent({ content, fontSize, fontFamily, lineHeight, maxWidth, textAlign, onScroll, isTranslating }: ChapterContentProps) {
   const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -68,6 +70,12 @@ export function ChapterContent({ content, fontSize, fontFamily, lineHeight, maxW
         }}
         dangerouslySetInnerHTML={{ __html: content }}
       />
+      {isTranslating && (
+        <div className="flex items-center justify-center py-4 text-muted-foreground text-sm animate-pulse">
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          Translating remaining content...
+        </div>
+      )}
     </div>
   )
 }

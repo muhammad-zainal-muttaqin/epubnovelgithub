@@ -6,6 +6,8 @@ import { useTheme } from "next-themes"
 import { getBook, updateBook } from "@/lib/db/books"
 import { getChaptersByBook } from "@/lib/db/chapters"
 import { updateProgress } from "@/lib/db/progress"
+import { getTranslation, saveTranslation } from "@/lib/db/translations"
+import { splitHtmlIntoChunks } from "@/lib/html-utils"
 import type { Book, Chapter, ReaderSettings, TOCChapter } from "@/lib/types"
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from "@/lib/keys"
 import { ReaderHeader } from "@/components/reader/reader-header"
@@ -46,7 +48,6 @@ export default function ReaderPage() {
   const [translatedContent, setTranslatedContent] = useState<string | null>(null)
   const [isTranslating, setIsTranslating] = useState(false)
   const [currentLanguage, setCurrentLanguage] = useState<string>("")
-  const [translationCache, setTranslationCache] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const savedSettings = localStorage.getItem(STORAGE_KEYS.READER_SETTINGS)
@@ -96,14 +97,36 @@ export default function ReaderPage() {
   }, [bookId, router])
 
   useEffect(() => {
-    const chapterIndex = Number.parseInt(chapterId)
-    if (!isNaN(chapterIndex) && chapterIndex >= 0 && chapters.length > 0 && chapterIndex < chapters.length) {
-      setCurrentChapterIndex(chapterIndex)
-      setScrollProgress(0)
-      setTranslatedContent(null)
-      setCurrentLanguage("")
+    const loadChapterContent = async () => {
+      const chapterIndex = Number.parseInt(chapterId)
+      if (!isNaN(chapterIndex) && chapterIndex >= 0 && chapters.length > 0 && chapterIndex < chapters.length) {
+        setCurrentChapterIndex(chapterIndex)
+        setScrollProgress(0)
+        
+        const targetLang = settings.targetLanguage
+        if (targetLang && targetLang !== "original") {
+          const chapter = chapters[chapterIndex]
+          const cached = await getTranslation(chapter.id, targetLang)
+          if (cached) {
+            setTranslatedContent(cached.content)
+            setCurrentLanguage(targetLang)
+          } else {
+            setTranslatedContent(null)
+            setCurrentLanguage("")
+          }
+        } else {
+          setTranslatedContent(null)
+          setCurrentLanguage("")
+        }
+      }
     }
-  }, [chapterId, chapters.length])
+    loadChapterContent()
+  }, [chapterId, chapters.length]) // removed settings.targetLanguage to avoid double-triggering logic if handled elsewhere, but wait...
+
+  // If settings.targetLanguage changes (e.g. from other tab or init), we might want to react? 
+  // But here, we only care about initial load or chapter change.
+  // If user changes language via menu, handleTranslate handles it.
+
 
   useEffect(() => {
     if (!book || chapters.length === 0) return
@@ -229,18 +252,42 @@ export default function ReaderPage() {
     setSettings((prev) => ({ ...prev, ...updates }))
   }, [])
 
-  const handleTranslate = useCallback(async (targetLang: string) => {
+  const currentChapter = chapters[currentChapterIndex]
+  const overallProgress = Math.min(((currentChapterIndex + scrollProgress / 100) / chapters.length) * 100, 100)
+
+  let displayChapterTitle = currentChapter?.title || ""
+  if (tocChapters && tocChapters.length > 0) {
+    const tocGroup = tocChapters.find(
+      (tc) => currentChapterIndex >= tc.startIndex && currentChapterIndex <= tc.endIndex,
+    )
+    if (tocGroup) {
+      displayChapterTitle = tocGroup.title
+    }
+  }
+
+  const handleTranslate = useCallback(async (targetLang: string, force: boolean = false) => {
     const currentChapter = chapters[currentChapterIndex]
     if (!currentChapter) return
 
-    if (currentLanguage === targetLang && translatedContent) return
-    
-    const cacheKey = `${currentChapter.id}-${targetLang}`
-    if (translationCache[cacheKey]) {
-      setTranslatedContent(translationCache[cacheKey])
-      setCurrentLanguage(targetLang)
-      toast.success(`Loaded translation from cache`)
+    if (targetLang === "original") {
+      setTranslatedContent(null)
+      setCurrentLanguage("")
+      setSettings((prev) => ({ ...prev, targetLanguage: "" }))
       return
+    }
+
+    if (!force && currentLanguage === targetLang && translatedContent) return
+    
+    setSettings((prev) => ({ ...prev, targetLanguage: targetLang }))
+
+    if (!force) {
+      const cached = await getTranslation(currentChapter.id, targetLang)
+      if (cached) {
+        setTranslatedContent(cached.content)
+        setCurrentLanguage(targetLang)
+        toast.success(`Loaded translation from cache`)
+        return
+      }
     }
 
     if (!settings.apiKey) {
@@ -250,50 +297,97 @@ export default function ReaderPage() {
     }
 
     setIsTranslating(true)
+    // Reset to empty if we are starting a fresh translation
+    setTranslatedContent(null)
+    setCurrentLanguage(targetLang)
+
     try {
       const imgTags: string[] = []
+      // Replace images with placeholders in the FULL content first
       const contentWithPlaceholders = currentChapter.content.replace(/<img[^>]*>/g, (match) => {
         imgTags.push(match)
         return `__IMG_PLACEHOLDER_${imgTags.length - 1}__`
       })
 
-      const response = await fetch("/api/translate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-google-api-key": settings.apiKey,
-        },
-        body: JSON.stringify({
-          text: contentWithPlaceholders,
-          targetLang,
-          bookTitle: book?.title || "",
-          chapterTitle: displayChapterTitle,
-        }),
-      })
+      // Split into chunks
+      const chunks = splitHtmlIntoChunks(contentWithPlaceholders, 2000)
+      let fullTranslatedContent = ""
 
-      const data = await response.json()
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i]
+        
+        try {
+          const response = await fetch("/api/translate", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-google-api-key": settings.apiKey,
+            },
+            body: JSON.stringify({
+              text: chunk,
+              targetLang,
+              bookTitle: book?.title || "",
+              chapterTitle: displayChapterTitle,
+            }),
+          })
 
-      if (!response.ok) {
-        throw new Error(data.error || "Translation failed")
+          const data = await response.json()
+
+          if (!response.ok) {
+            throw new Error(data.error || "Translation failed")
+          }
+
+          let chunkTranslated = data.translatedText
+          
+          // Restore images in this chunk
+          imgTags.forEach((tag, index) => {
+            const placeholderRegex = new RegExp(`__\\s*IMG_PLACEHOLDER_${index}\\s*__`, "gi")
+            chunkTranslated = chunkTranslated.replace(placeholderRegex, tag)
+          })
+
+          fullTranslatedContent += chunkTranslated
+          
+          // Update UI progressively
+          setTranslatedContent(fullTranslatedContent)
+          
+        } catch (chunkError) {
+          console.error(`Error translating chunk ${i}:`, chunkError)
+          // Continue to next chunk or stop? 
+          // For now, append original text as fallback or just stop?
+          // Let's append the original chunk as fallback so the user sees *something*
+          let chunkOriginal = chunk
+           imgTags.forEach((tag, index) => {
+            const placeholderRegex = new RegExp(`__\\s*IMG_PLACEHOLDER_${index}\\s*__`, "gi")
+            chunkOriginal = chunkOriginal.replace(placeholderRegex, tag)
+          })
+          fullTranslatedContent += chunkOriginal 
+          setTranslatedContent(fullTranslatedContent)
+          toast.error(`Part of translation failed, showing original for that section.`)
+        }
       }
 
-      let restoredContent = data.translatedText
-      imgTags.forEach((tag, index) => {
-        const placeholderRegex = new RegExp(`__\\s*IMG_PLACEHOLDER_${index}\\s*__`, "gi")
-        restoredContent = restoredContent.replace(placeholderRegex, tag)
+      // Save complete translation to IDB
+      await saveTranslation({
+        id: `${currentChapter.id}-${targetLang}`,
+        chapterId: currentChapter.id,
+        language: targetLang,
+        content: fullTranslatedContent,
+        translatedAt: Date.now(),
       })
 
-      setTranslatedContent(restoredContent)
-      setCurrentLanguage(targetLang)
-      setTranslationCache(prev => ({ ...prev, [cacheKey]: restoredContent }))
-      toast.success(`Translated to ${targetLang}`)
+      toast.success(`Translation complete`)
     } catch (error: any) {
       console.error("Translation error:", error)
       toast.error("Translation Failed", { description: error.message })
+      // Revert if total failure
+      if (!translatedContent) {
+         setTranslatedContent(null)
+         setCurrentLanguage("")
+      }
     } finally {
       setIsTranslating(false)
     }
-  }, [chapters, currentChapterIndex, settings.apiKey, currentLanguage, translatedContent])
+  }, [chapters, currentChapterIndex, settings.apiKey, currentLanguage, translatedContent, book?.title, displayChapterTitle])
 
   const handleBackToTop = useCallback(() => {
     const selectors = [
@@ -378,19 +472,6 @@ export default function ReaderPage() {
     return null
   }
 
-  const currentChapter = chapters[currentChapterIndex]
-  const overallProgress = Math.min(((currentChapterIndex + scrollProgress / 100) / chapters.length) * 100, 100)
-
-  let displayChapterTitle = currentChapter?.title || ""
-  if (tocChapters && tocChapters.length > 0) {
-    const tocGroup = tocChapters.find(
-      (tc) => currentChapterIndex >= tc.startIndex && currentChapterIndex <= tc.endIndex,
-    )
-    if (tocGroup) {
-      displayChapterTitle = tocGroup.title
-    }
-  }
-
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
       <ProgressBar progress={overallProgress} />
@@ -416,6 +497,7 @@ export default function ReaderPage() {
           maxWidth={settings.maxWidth}
           textAlign={settings.textAlign}
           onScroll={setScrollProgress}
+          isTranslating={isTranslating}
         />
       </main>
 

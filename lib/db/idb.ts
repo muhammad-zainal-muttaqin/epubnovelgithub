@@ -66,6 +66,13 @@ export async function initDB(): Promise<IDBDatabase> {
           }
         }
       }
+
+      if (!db.objectStoreNames.contains(STORES.TRANSLATIONS)) {
+        const translationStore = db.createObjectStore(STORES.TRANSLATIONS, {
+          keyPath: "id",
+        })
+        translationStore.createIndex("chapterId", "chapterId", { unique: false })
+      }
     }
   })
 }
