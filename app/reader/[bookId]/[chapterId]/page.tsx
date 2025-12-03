@@ -64,7 +64,10 @@ export default function ReaderPage() {
   const [currentLanguage, setCurrentLanguage] = useState<string>("")
   const [pendingChunks, setPendingChunks] = useState(0)
   const skeletonCacheRef = useRef<Map<string, string[]>>(new Map())
-    const buildSkeletonForChunk = useCallback(
+  const scrollSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [initialScrollPercent, setInitialScrollPercent] = useState<number | undefined>(undefined)
+  const chapterScrollPositionsRef = useRef<Map<number, number>>(new Map())
+  const buildSkeletonForChunk = useCallback(
     (htmlChunk: string, seed: number, fontSize = settings.fontSize, maxWidth = settings.maxWidth) => {
       const charsPerLine = Math.max(16, Math.floor(maxWidth / Math.max(fontSize * 0.55, 6)))
 
@@ -108,6 +111,37 @@ export default function ReaderPage() {
     },
     [settings.fontSize, settings.maxWidth],
   )
+  const persistScrollPositions = useCallback(() => {
+    if (typeof window === "undefined") return
+    const payload: Record<string, number> = {}
+    chapterScrollPositionsRef.current.forEach((value, key) => {
+      payload[key] = value
+    })
+    try {
+      localStorage.setItem(`chapter-scroll-${bookId}`, JSON.stringify(payload))
+    } catch (error) {
+      console.error("Failed to persist scroll positions", error)
+    }
+  }, [bookId])
+
+  const loadScrollPositions = useCallback(() => {
+    const map = new Map<number, number>()
+    if (typeof window === "undefined") return map
+    const saved = localStorage.getItem(`chapter-scroll-${bookId}`)
+    if (!saved) return map
+    try {
+      const parsed = JSON.parse(saved) as Record<string, number>
+      Object.entries(parsed).forEach(([idx, value]) => {
+        const numIdx = Number.parseInt(idx)
+        if (!Number.isNaN(numIdx) && typeof value === "number") {
+          map.set(numIdx, value)
+        }
+      })
+    } catch (error) {
+      console.error("Failed to load scroll positions", error)
+    }
+    return map
+  }, [bookId])
 
   useEffect(() => {
     const savedSettings = localStorage.getItem(STORAGE_KEYS.READER_SETTINGS)
@@ -115,6 +149,20 @@ export default function ReaderPage() {
       setSettings(JSON.parse(savedSettings))
     }
   }, [])
+
+  useEffect(() => {
+    const loaded = loadScrollPositions()
+    chapterScrollPositionsRef.current = loaded
+
+    const saved = loaded.get(currentChapterIndex)
+    if (typeof saved === "number") {
+      setInitialScrollPercent(saved)
+      setScrollProgress(saved)
+    } else {
+      setInitialScrollPercent(0)
+      setScrollProgress(0)
+    }
+  }, [currentChapterIndex, loadScrollPositions])
 
   useEffect(() => {
     const loadData = async () => {
@@ -171,7 +219,10 @@ export default function ReaderPage() {
       const chapterIndex = Number.parseInt(chapterId)
       if (!isNaN(chapterIndex) && chapterIndex >= 0 && chapters.length > 0 && chapterIndex < chapters.length) {
         setCurrentChapterIndex(chapterIndex)
-        setScrollProgress(0)
+        
+        const savedScroll = chapterScrollPositionsRef.current.get(chapterIndex) ?? 0
+        setInitialScrollPercent(savedScroll)
+        setScrollProgress(savedScroll)
         
         const targetLang = settings.targetLanguage
         if (targetLang && targetLang !== "original") {
@@ -210,6 +261,15 @@ export default function ReaderPage() {
       router.prefetch(`/reader/${bookId}/${index}`)
     })
   }, [bookId, chapters.length, currentChapterIndex, router])
+
+  useEffect(() => {
+    return () => {
+      if (scrollSaveTimeoutRef.current) {
+        clearTimeout(scrollSaveTimeoutRef.current)
+      }
+      persistScrollPositions()
+    }
+  }, [persistScrollPositions])
 
   useEffect(() => {
     if (!book || chapters.length === 0) return
@@ -274,31 +334,49 @@ export default function ReaderPage() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [currentChapterIndex, chapters.length, settings])
 
+  const handleScrollProgress = useCallback(
+    (percent: number) => {
+      setScrollProgress(percent)
+
+      if (scrollSaveTimeoutRef.current) {
+        clearTimeout(scrollSaveTimeoutRef.current)
+      }
+
+      scrollSaveTimeoutRef.current = setTimeout(() => {
+        chapterScrollPositionsRef.current.set(currentChapterIndex, percent)
+        persistScrollPositions()
+      }, 150)
+    },
+    [currentChapterIndex, persistScrollPositions],
+  )
+
+  const snapshotCurrentPosition = useCallback(() => {
+    chapterScrollPositionsRef.current.set(currentChapterIndex, scrollProgress)
+    persistScrollPositions()
+  }, [currentChapterIndex, persistScrollPositions, scrollProgress])
+
   const handlePrevChapter = useCallback(() => {
     if (currentChapterIndex > 0) {
+      snapshotCurrentPosition()
       const newIndex = currentChapterIndex - 1
-      setCurrentChapterIndex(newIndex)
-      setScrollProgress(0)
       router.push(`/reader/${bookId}/${newIndex}`)
     }
-  }, [currentChapterIndex, bookId, router])
+  }, [currentChapterIndex, bookId, router, snapshotCurrentPosition])
 
   const handleNextChapter = useCallback(() => {
     if (currentChapterIndex < chapters.length - 1) {
+      snapshotCurrentPosition()
       const newIndex = currentChapterIndex + 1
-      setCurrentChapterIndex(newIndex)
-      setScrollProgress(0)
       router.push(`/reader/${bookId}/${newIndex}`)
     }
-  }, [currentChapterIndex, chapters.length, bookId, router])
+  }, [currentChapterIndex, chapters.length, bookId, router, snapshotCurrentPosition])
 
   const handleChapterSelect = useCallback(
     (index: number) => {
-      setCurrentChapterIndex(index)
-      setScrollProgress(0)
+      snapshotCurrentPosition()
       router.push(`/reader/${bookId}/${index}`)
     },
-    [bookId, router],
+    [bookId, router, snapshotCurrentPosition],
   )
 
   const handleFontDecrease = useCallback(() => {
@@ -603,13 +681,15 @@ export default function ReaderPage() {
 
         <main className="flex-1">
           <ChapterContent
+            key={currentChapter?.id || currentChapterIndex}
             content={translatedContent || currentChapter.content}
             fontSize={settings.fontSize}
             fontFamily={settings.fontFamily}
             lineHeight={settings.lineHeight}
             maxWidth={settings.maxWidth}
             textAlign={settings.textAlign}
-            onScroll={setScrollProgress}
+            onScroll={handleScrollProgress}
+            initialScrollPercent={initialScrollPercent}
             isTranslating={isTranslating}
             pendingChunks={pendingChunks}
           />

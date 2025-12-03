@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
-import { Loader2 } from "lucide-react"
+import { useEffect, useLayoutEffect, useRef } from "react"
 
 interface ChapterContentProps {
   content: string
@@ -13,14 +12,27 @@ interface ChapterContentProps {
   onScroll?: (scrollPercentage: number) => void
   isTranslating?: boolean
   pendingChunks?: number
+  initialScrollPercent?: number
 }
 
-export function ChapterContent({ content, fontSize, fontFamily, lineHeight, maxWidth, textAlign, onScroll, isTranslating, pendingChunks = 0 }: ChapterContentProps) {
+export function ChapterContent({
+  content,
+  fontSize,
+  fontFamily,
+  lineHeight,
+  maxWidth,
+  textAlign,
+  onScroll,
+  isTranslating,
+  pendingChunks = 0,
+  initialScrollPercent,
+}: ChapterContentProps) {
   const contentRef = useRef<HTMLDivElement>(null)
+  const readyRef = useRef(false)
 
   useEffect(() => {
     const handleScroll = () => {
-      if (!contentRef.current || !onScroll) return
+      if (!contentRef.current || !onScroll || !readyRef.current) return
 
       const element = contentRef.current
       const scrollTop = element.scrollTop
@@ -37,10 +49,53 @@ export function ChapterContent({ content, fontSize, fontFamily, lineHeight, maxW
     const element = contentRef.current
     if (element) {
       element.addEventListener("scroll", handleScroll)
-      handleScroll()
       return () => element.removeEventListener("scroll", handleScroll)
     }
   }, [onScroll])
+
+  useLayoutEffect(() => {
+    if (!contentRef.current) return
+    const el = contentRef.current
+
+    if (initialScrollPercent == null) {
+      readyRef.current = true
+      return
+    }
+
+    readyRef.current = false
+
+    const clamped = Math.max(0, Math.min(100, initialScrollPercent))
+    let attempts = 0
+
+    const applyScroll = () => {
+      const maxScroll = el.scrollHeight - el.clientHeight
+      if (maxScroll <= 0) {
+        readyRef.current = true
+        if (onScroll) onScroll(100)
+        return
+      }
+
+      const targetScroll = Math.round((clamped / 100) * maxScroll)
+      el.scrollTop = targetScroll
+      attempts += 1
+
+      const reached = Math.abs(el.scrollTop - targetScroll) < 2 || attempts >= 5
+      if (reached) {
+        readyRef.current = true
+        if (onScroll) {
+          const scrollHeight = el.scrollHeight - el.clientHeight
+          const percentage = scrollHeight > 0 ? Math.min((el.scrollTop / scrollHeight) * 100, 100) : 100
+          onScroll(percentage)
+        }
+        return
+      }
+
+      requestAnimationFrame(applyScroll)
+    }
+
+    const raf1 = requestAnimationFrame(applyScroll)
+    return () => cancelAnimationFrame(raf1)
+  }, [content, initialScrollPercent, onScroll])
 
   const fontFamilyClass = {
     sans: "font-sans",
