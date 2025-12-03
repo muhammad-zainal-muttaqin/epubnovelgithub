@@ -1,11 +1,13 @@
 "use client"
 
-import { Card, CardContent } from "@/components/ui/card"
+import { formatDistanceToNow } from "date-fns"
+import { BookOpen, Clock3, FolderInput, MoreVertical, Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+
 import { Button } from "@/components/ui/button"
-import { BookOpen, Trash2, MoreVertical, FolderInput } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import type { Book } from "@/lib/types"
-import { useRouter } from "next/navigation"
 
 interface BookCardProps {
   book: Book
@@ -16,9 +18,16 @@ interface BookCardProps {
 export function BookCard({ book, onDelete, onMove }: BookCardProps) {
   const router = useRouter()
 
+  const progressValue = Math.max(0, Math.min(100, Math.round(book.progress || 0)))
+  const statusLabel = progressValue >= 99 ? "Finished" : progressValue > 0 ? "In progress" : "Unread"
+  const statusColor =
+    progressValue >= 99 ? "bg-green-500" : progressValue > 0 ? "bg-primary" : "bg-muted-foreground/40"
+  const lastReadLabel = book.lastReadAt
+    ? `Read ${formatDistanceToNow(book.lastReadAt, { addSuffix: true })}`
+    : "Not opened yet"
+
   const handleRead = () => {
     const chapterIndex = book.currentChapter || 0
-    console.log("Opening book:", book.id, "at chapter:", chapterIndex)
     router.push(`/reader/${book.id}/${chapterIndex}`)
   }
 
@@ -35,67 +44,100 @@ export function BookCard({ book, onDelete, onMove }: BookCardProps) {
   }
 
   return (
-    <Card className="group overflow-hidden transition-all hover:shadow-lg">
-      <CardContent className="p-0">
-        <div className="flex gap-4 p-4">
-          {/* Cover */}
-          <div className="relative h-40 w-28 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+    <Card className="group overflow-hidden border border-primary/10 bg-card/80 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg">
+      <CardContent className="p-4">
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <div className="relative h-44 w-full overflow-hidden rounded-lg bg-muted sm:h-36 sm:w-28 sm:flex-shrink-0">
             {book.cover ? (
               <img src={book.cover || "/placeholder.svg"} alt={book.title} className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
-                <BookOpen className="h-12 w-12 text-muted-foreground" />
+                <BookOpen className="h-10 w-10 text-muted-foreground" />
               </div>
             )}
+            <div className="absolute inset-x-0 bottom-0 h-1 bg-muted/70">
+              <div
+                className="h-full bg-primary transition-all"
+                style={{ width: `${progressValue}%` }}
+                aria-hidden
+              />
+            </div>
           </div>
 
-          {/* Info */}
-          <div className="flex flex-1 flex-col justify-between overflow-hidden">
-            <div className="overflow-hidden">
-              <h3 className="break-words font-semibold leading-tight" title={book.title}>{book.title}</h3>
-              <p className="mt-1 text-sm text-muted-foreground truncate" title={book.author}>{book.author}</p>
-              {book.description && (
-                <p className="mt-2 line-clamp-2 text-pretty text-xs text-muted-foreground">{book.description}</p>
-              )}
+          <div className="flex flex-1 flex-col gap-3">
+            <div className="flex items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <h3 className="line-clamp-1 font-semibold leading-tight" title={book.title}>
+                  {book.title}
+                </h3>
+                <p className="line-clamp-1 text-xs text-muted-foreground" title={book.author}>
+                  {book.author || "Unknown author"}
+                </p>
+              </div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" variant="ghost" className="flex-shrink-0">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {onMove && (
+                    <DropdownMenuItem onClick={() => setTimeout(handleMove, 50)}>
+                      <FolderInput className="mr-2 h-4 w-4" />
+                      Move to folder
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
-            <div className="mt-3 space-y-2">
-              {/* Progress info */}
-              <div className="text-xs text-muted-foreground">
-                {book.progress > 0 ? (
-                  <span>{Math.round(book.progress)}% complete</span>
-                ) : (
-                  <span>{book.totalChapters} chapters</span>
-                )}
-              </div>
+            {book.description && (
+              <p className="line-clamp-2 text-xs text-muted-foreground">{book.description}</p>
+            )}
 
-              {/* Action buttons */}
-              <div className="flex items-center justify-between">
-                <Button size="sm" onClick={handleRead} className="flex-1 max-w-[120px]">
-                  <BookOpen className="mr-1.5 h-3.5 w-3.5" />
-                  <span className="truncate">{book.progress > 0 ? "Continue" : "Read"}</span>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <span className={`h-2 w-2 rounded-full ${statusColor}`} />
+                <span>
+                  {statusLabel} - {progressValue}%
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Clock3 className="h-3.5 w-3.5" />
+                <span>{lastReadLabel}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <BookOpen className="h-3.5 w-3.5" />
+                <span>{book.totalChapters} chapters</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full bg-primary transition-all"
+                  style={{ width: `${progressValue}%` }}
+                />
+              </div>
+              <span className="text-xs text-muted-foreground">{progressValue}%</span>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Button size="sm" onClick={handleRead} className="w-full sm:flex-1">
+                <BookOpen className="mr-1.5 h-4 w-4" />
+                {progressValue > 0 ? "Continue" : "Read"}
+              </Button>
+              {onMove && (
+                <Button size="sm" variant="outline" onClick={handleMove} className="w-full sm:w-auto sm:flex-shrink-0">
+                  <FolderInput className="mr-1.5 h-4 w-4" />
+                  Move
                 </Button>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="ghost" className="flex-shrink-0">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {onMove && (
-                      <DropdownMenuItem onClick={() => setTimeout(handleMove, 50)}>
-                        <FolderInput className="mr-2 h-4 w-4" />
-                        Move to Folder
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={handleDelete} className="text-destructive">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useTheme } from "next-themes"
 import { getBook, updateBook } from "@/lib/db/books"
@@ -48,6 +48,52 @@ export default function ReaderPage() {
   const [translatedContent, setTranslatedContent] = useState<string | null>(null)
   const [isTranslating, setIsTranslating] = useState(false)
   const [currentLanguage, setCurrentLanguage] = useState<string>("")
+  const [pendingChunks, setPendingChunks] = useState(0)
+  const skeletonCacheRef = useRef<Map<string, string[]>>(new Map())
+    const buildSkeletonForChunk = useCallback(
+    (htmlChunk: string, seed: number, fontSize = settings.fontSize, maxWidth = settings.maxWidth) => {
+      const charsPerLine = Math.max(16, Math.floor(maxWidth / Math.max(fontSize * 0.55, 6)))
+
+      const textOnly = htmlChunk.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
+      const words = textOnly.length ? textOnly.split(" ") : [" "]
+
+      const linesCollected: string[] = []
+      let current = ""
+      for (const word of words) {
+        if (!current.length) {
+          current = word
+          continue
+        }
+        if ((current + " " + word).length > charsPerLine) {
+          linesCollected.push(current)
+          current = word
+        } else {
+          current += " " + word
+        }
+      }
+      if (current.length) linesCollected.push(current)
+      if (!linesCollected.length) linesCollected.push(" ")
+
+      const rand = (i: number) => {
+        const n = Math.sin(seed * 999 + i * 17) * 10000
+        return n - Math.floor(n)
+      }
+
+      const lines = linesCollected.map((line, idx) => {
+        const baseWidth = Math.min(100, Math.max(35, (line.length / charsPerLine) * 100))
+        const jitter = (rand(idx) - 0.5) * 8
+        const width = Math.max(32, Math.min(100, baseWidth + jitter))
+        return `<div class="h-4 rounded bg-muted" style="width:${width}%"></div>`
+      })
+
+      return `
+        <div class="space-y-2 animate-pulse my-4">
+          ${lines.join("")}
+        </div>
+      `
+    },
+    [settings.fontSize, settings.maxWidth],
+  )
 
   useEffect(() => {
     const savedSettings = localStorage.getItem(STORAGE_KEYS.READER_SETTINGS)
@@ -121,12 +167,7 @@ export default function ReaderPage() {
       }
     }
     loadChapterContent()
-  }, [chapterId, chapters.length]) // removed settings.targetLanguage to avoid double-triggering logic if handled elsewhere, but wait...
-
-  // If settings.targetLanguage changes (e.g. from other tab or init), we might want to react? 
-  // But here, we only care about initial load or chapter change.
-  // If user changes language via menu, handleTranslate handles it.
-
+  }, [chapterId, chapters.length])
 
   useEffect(() => {
     if (!book || chapters.length === 0) return
@@ -272,6 +313,7 @@ export default function ReaderPage() {
     if (targetLang === "original") {
       setTranslatedContent(null)
       setCurrentLanguage("")
+      setPendingChunks(0)
       setSettings((prev) => ({ ...prev, targetLanguage: "" }))
       return
     }
@@ -285,6 +327,7 @@ export default function ReaderPage() {
       if (cached) {
         setTranslatedContent(cached.content)
         setCurrentLanguage(targetLang)
+        setPendingChunks(0)
         toast.success(`Loaded translation from cache`)
         return
       }
@@ -297,21 +340,32 @@ export default function ReaderPage() {
     }
 
     setIsTranslating(true)
-    // Reset to empty if we are starting a fresh translation
-    setTranslatedContent(null)
+    setPendingChunks(0)
     setCurrentLanguage(targetLang)
+
+    let hasTranslated = false
 
     try {
       const imgTags: string[] = []
-      // Replace images with placeholders in the FULL content first
       const contentWithPlaceholders = currentChapter.content.replace(/<img[^>]*>/g, (match) => {
         imgTags.push(match)
         return `__IMG_PLACEHOLDER_${imgTags.length - 1}__`
       })
 
-      // Split into chunks
-      const chunks = splitHtmlIntoChunks(contentWithPlaceholders, 2000)
-      let fullTranslatedContent = ""
+      const chunks = splitHtmlIntoChunks(contentWithPlaceholders, 1200)
+      setPendingChunks(chunks.length)
+
+      const skeletonKey = `${currentChapter.id}-${targetLang}-${contentWithPlaceholders.length}-${chunks.length}-${chunks.map((c) => c.length).join(",")}`
+      let skeletons = skeletonCacheRef.current.get(skeletonKey)
+      if (!skeletons) {
+        skeletons = chunks.map((chunk, idx) => buildSkeletonForChunk(chunk, idx))
+        skeletonCacheRef.current.set(skeletonKey, skeletons)
+      }
+      const translatedParts: string[] = Array(chunks.length).fill("")
+
+      if (skeletons.length > 0) {
+        setTranslatedContent(skeletons.join(""))
+      }
 
       for (let i = 0; i < chunks.length; i++) {
         const chunk = chunks[i]
@@ -339,55 +393,66 @@ export default function ReaderPage() {
 
           let chunkTranslated = data.translatedText
           
-          // Restore images in this chunk
           imgTags.forEach((tag, index) => {
             const placeholderRegex = new RegExp(`__\\s*IMG_PLACEHOLDER_${index}\\s*__`, "gi")
             chunkTranslated = chunkTranslated.replace(placeholderRegex, tag)
           })
 
-          fullTranslatedContent += chunkTranslated
-          
-          // Update UI progressively
-          setTranslatedContent(fullTranslatedContent)
+          translatedParts[i] = chunkTranslated
+          hasTranslated = true
+
+          const remaining = Math.max(chunks.length - i - 1, 0)
+          setTranslatedContent(
+            translatedParts
+              .map((part, idx) => part || skeletons[idx])
+              .join(""),
+          )
+          setPendingChunks(remaining)
           
         } catch (chunkError) {
           console.error(`Error translating chunk ${i}:`, chunkError)
-          // Continue to next chunk or stop? 
-          // For now, append original text as fallback or just stop?
-          // Let's append the original chunk as fallback so the user sees *something*
           let chunkOriginal = chunk
-           imgTags.forEach((tag, index) => {
+          imgTags.forEach((tag, index) => {
             const placeholderRegex = new RegExp(`__\\s*IMG_PLACEHOLDER_${index}\\s*__`, "gi")
             chunkOriginal = chunkOriginal.replace(placeholderRegex, tag)
           })
-          fullTranslatedContent += chunkOriginal 
-          setTranslatedContent(fullTranslatedContent)
+          translatedParts[i] = chunkOriginal 
+          hasTranslated = true
+          const remaining = Math.max(chunks.length - i - 1, 0)
+          setTranslatedContent(
+            translatedParts
+              .map((part, idx) => part || skeletons[idx])
+              .join(""),
+          )
           toast.error(`Part of translation failed, showing original for that section.`)
+          setPendingChunks(remaining)
         }
       }
 
-      // Save complete translation to IDB
+      const finalContent = translatedParts.join("")
+
       await saveTranslation({
         id: `${currentChapter.id}-${targetLang}`,
         chapterId: currentChapter.id,
         language: targetLang,
-        content: fullTranslatedContent,
+        content: finalContent,
         translatedAt: Date.now(),
       })
 
       toast.success(`Translation complete`)
+      setTranslatedContent(finalContent)
+      setPendingChunks(0)
     } catch (error: any) {
       console.error("Translation error:", error)
       toast.error("Translation Failed", { description: error.message })
-      // Revert if total failure
-      if (!translatedContent) {
-         setTranslatedContent(null)
-         setCurrentLanguage("")
+      if (!hasTranslated) {
+        setTranslatedContent(null)
+        setCurrentLanguage("")
       }
     } finally {
       setIsTranslating(false)
     }
-  }, [chapters, currentChapterIndex, settings.apiKey, currentLanguage, translatedContent, book?.title, displayChapterTitle])
+  }, [chapters, currentChapterIndex, settings.apiKey, currentLanguage, translatedContent, book?.title, displayChapterTitle, buildSkeletonForChunk])
 
   const handleBackToTop = useCallback(() => {
     const selectors = [
@@ -473,7 +538,7 @@ export default function ReaderPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-background text-foreground">
+    <div className="flex h-screen flex-col bg-[#f9f7f1] text-foreground dark:bg-gradient-to-b dark:from-[#070b12] dark:via-[#0a0f18] dark:to-[#0d111b]">
       <ProgressBar progress={overallProgress} />
 
       <ReaderHeader
@@ -498,6 +563,7 @@ export default function ReaderPage() {
           textAlign={settings.textAlign}
           onScroll={setScrollProgress}
           isTranslating={isTranslating}
+          pendingChunks={pendingChunks}
         />
       </main>
 

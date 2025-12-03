@@ -1,5 +1,3 @@
-// Storage keys
-
 export const STORAGE_VERSION = "1.0.0"
 
 export const STORAGE_KEYS = {

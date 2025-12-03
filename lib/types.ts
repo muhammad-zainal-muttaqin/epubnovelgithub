@@ -1,5 +1,3 @@
-// Core types
-
 export interface Book {
   id: string
   title: string

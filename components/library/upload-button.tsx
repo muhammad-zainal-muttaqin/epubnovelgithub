@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useId, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Upload, Loader2 } from "lucide-react"
 import { parseEPUB } from "@/lib/epub/epubParser"
@@ -12,8 +12,8 @@ import { useToast } from "@/hooks/use-toast"
 
 export function UploadButton({ onUploadComplete, className, children, currentFolderId }: { onUploadComplete?: () => void; className?: string; children?: React.ReactNode; currentFolderId?: string | null }) {
   const [isUploading, setIsUploading] = useState(false)
+  const uploadId = useId().replace(/:/g, "")
   const { toast } = useToast()
-  const uploadId = `epub-upload-${Math.random().toString(36).substr(2, 9)}`
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

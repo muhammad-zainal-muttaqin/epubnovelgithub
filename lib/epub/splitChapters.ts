@@ -1,5 +1,3 @@
-// Split chapters utility
-
 export interface ChapterChunk {
   index: number
   content: string

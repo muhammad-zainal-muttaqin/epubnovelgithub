@@ -1,5 +1,3 @@
-// IndexedDB wrapper
-
 import { DB_NAME, DB_VERSION, STORES } from "../keys"
 
 let dbInstance: IDBDatabase | null = null

@@ -24,7 +24,6 @@ export function SettingsDialog({ open, onOpenChange, settings, onSettingsChange 
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Gemini API Key */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="apiKey">Google Gemini API Key</Label>
@@ -51,7 +50,6 @@ export function SettingsDialog({ open, onOpenChange, settings, onSettingsChange 
 
           <div className="h-px bg-border" />
 
-          {/* Font Size */}
           <div className="space-y-2">
             <Label>Font Size: {settings.fontSize}px</Label>
             <Slider
@@ -63,7 +61,6 @@ export function SettingsDialog({ open, onOpenChange, settings, onSettingsChange 
             />
           </div>
 
-          {/* Font Family */}
           <div className="space-y-2">
             <Label>Font Family</Label>
             <Select value={settings.fontFamily} onValueChange={(value: any) => onSettingsChange({ fontFamily: value })}>
@@ -83,7 +80,6 @@ export function SettingsDialog({ open, onOpenChange, settings, onSettingsChange 
             </Select>
           </div>
 
-          {/* Line Height */}
           <div className="space-y-2">
             <Label>Line Height: {settings.lineHeight.toFixed(1)}</Label>
             <Slider
@@ -95,7 +91,6 @@ export function SettingsDialog({ open, onOpenChange, settings, onSettingsChange 
             />
           </div>
 
-          {/* Max Width */}
           <div className="space-y-2">
             <Label>Content Width: {settings.maxWidth}px</Label>
             <Slider
@@ -107,7 +102,6 @@ export function SettingsDialog({ open, onOpenChange, settings, onSettingsChange 
             />
           </div>
 
-          {/* Text Alignment */}
           <div className="space-y-2">
             <Label>Text Alignment</Label>
             <Select value={settings.textAlign} onValueChange={(value: any) => onSettingsChange({ textAlign: value })}>

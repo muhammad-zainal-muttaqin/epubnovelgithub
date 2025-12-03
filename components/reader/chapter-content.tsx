@@ -12,9 +12,10 @@ interface ChapterContentProps {
   textAlign: "left" | "center" | "right" | "justify"
   onScroll?: (scrollPercentage: number) => void
   isTranslating?: boolean
+  pendingChunks?: number
 }
 
-export function ChapterContent({ content, fontSize, fontFamily, lineHeight, maxWidth, textAlign, onScroll, isTranslating }: ChapterContentProps) {
+export function ChapterContent({ content, fontSize, fontFamily, lineHeight, maxWidth, textAlign, onScroll, isTranslating, pendingChunks = 0 }: ChapterContentProps) {
   const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -62,20 +63,25 @@ export function ChapterContent({ content, fontSize, fontFamily, lineHeight, maxW
   return (
     <div ref={contentRef} className="h-full overflow-y-auto scrollbar-hide chapter-scroll" data-chapter-content>
       <article
-        className={cn("prose prose-neutral mx-auto px-4 pt-20 pb-24 pb-[calc(6rem+env(safe-area-inset-bottom))]", fontFamilyClass, textAlignClass)}
+        className={cn(
+          "prose prose-neutral dark:prose-invert mx-auto px-4 pt-20 pb-24 pb-[calc(6rem+env(safe-area-inset-bottom))]",
+          "break-words overflow-wrap-anywhere",
+          "[&_*]:!bg-transparent",
+          "[&_p]:!mb-4 [&_p]:!mt-0 [&_p]:!leading-relaxed [&_p]:break-words",
+          "[&_div]:!mb-4 [&_div]:!mt-0 [&_div]:break-words",
+          "[&_span]:!bg-transparent [&_span]:break-words",
+          "[&_pre]:!whitespace-pre-wrap [&_pre]:!break-words",
+          fontFamilyClass, 
+          textAlignClass
+        )}
         style={{
           fontSize: `${fontSize}px`,
           lineHeight: lineHeight,
           maxWidth: `${maxWidth}px`,
         }}
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
-      {isTranslating && (
-        <div className="flex items-center justify-center py-4 text-muted-foreground text-sm animate-pulse">
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Translating remaining content...
-        </div>
-      )}
+      >
+        <div dangerouslySetInnerHTML={{ __html: content }} />
+      </article>
     </div>
   )
 }

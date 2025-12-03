@@ -1,5 +1,3 @@
-// Chapter repository
-
 import { STORES } from "../keys"
 import type { Chapter } from "../types"
 import { getFromStore, putInStore, deleteFromStore, getByIndex } from "./idb"

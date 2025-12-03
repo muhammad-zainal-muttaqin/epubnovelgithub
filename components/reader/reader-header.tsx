@@ -40,14 +40,11 @@ export function ReaderHeader({
     const handleScroll = () => {
       const currentScrollY = window.scrollY
       
-      // Ignore negative scroll (iOS bounce)
       if (currentScrollY < 0) return
 
-      // Always show at the very top
       if (currentScrollY < 10) {
         setIsVisible(true)
       } else {
-        // Show when scrolling up, hide when scrolling down
         if (currentScrollY < lastScrollY.current) {
           setIsVisible(true)
         } else if (currentScrollY > lastScrollY.current) {
@@ -83,7 +80,7 @@ export function ReaderHeader({
   }
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+    <header className={`fixed top-0 left-0 right-0 z-40 border-b bg-[#f9f7f1]/95 backdrop-blur supports-[backdrop-filter]:bg-[#f9f7f1]/60 dark:bg-background/95 dark:supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
       <div className="container mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
         <div className="flex items-center gap-3 min-w-0">
           <Button variant="ghost" size="icon" onClick={handleBackClick} className="h-9 w-9 shrink-0">

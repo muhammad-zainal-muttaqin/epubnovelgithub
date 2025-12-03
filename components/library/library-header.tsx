@@ -37,7 +37,6 @@ export function LibraryHeader({
   const { theme, setTheme } = useTheme()
   return (
     <div className="container mx-auto max-w-5xl flex items-center justify-between">
-      {/* Mobile: Burger menu */}
       <div className="flex md:hidden items-center gap-2 flex-1">
         <MobileMenu
           currentFolderName={currentFolderName}
@@ -70,7 +69,6 @@ export function LibraryHeader({
         </div>
       </div>
 
-      {/* Mobile: Theme toggle */}
       <div className="flex md:hidden">
         <Button
           variant="outline"
@@ -84,7 +82,6 @@ export function LibraryHeader({
         </Button>
       </div>
 
-      {/* Desktop: Full layout */}
       <div className="hidden md:flex items-center gap-4 flex-1">
         <Button 
           variant="outline" 
@@ -130,7 +127,6 @@ export function LibraryHeader({
         </div>
       </div>
 
-      {/* Desktop: Actions */}
       <div className="hidden md:flex items-center gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

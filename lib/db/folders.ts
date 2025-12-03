@@ -1,5 +1,3 @@
-// Folder repository
-
 import { STORES } from "../keys"
 import type { Folder } from "../types"
 import { getAllFromStore, getFromStore, putInStore, deleteFromStore, getStore } from "./idb"
@@ -18,7 +16,6 @@ async function ensureUniqueSlug(name: string, existingId?: string) {
   const store = await getStore(STORES.FOLDERS, "readonly")
   let i = 1
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     try {
       const index = store.index("slug")

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import { getBooksByFolder, getAllBooks, getBook, type SortBy } from "@/lib/db/books"
 import { deleteBook, updateBook } from "@/lib/db/books"
@@ -16,7 +16,12 @@ import { LibraryHeader } from "@/components/library/library-header"
 import { Loader2, BookOpen, Upload } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
+
+type LibraryFilter = "all" | "in-progress" | "finished" | "unread"
 
 export default function LibraryPage() {
   const [books, setBooks] = useState<Book[]>([])
@@ -31,15 +36,18 @@ export default function LibraryPage() {
   const [editingFolder, setEditingFolder] = useState<{ id: string; name: string } | null>(null)
   const [moveBookOpen, setMoveBookOpen] = useState(false)
   const [movingBook, setMovingBook] = useState<Book | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filter, setFilter] = useState<LibraryFilter>("all")
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const loadPromiseRef = useRef<Promise<void> | null>(null)
 
   useEffect(() => {
     setMounted(true)
     
-    // Load sorting preference from localStorage after mount
     const saved = localStorage.getItem("library-sort-by")
     if (saved && ["name", "addedAt", "lastReadAt", "progress"].includes(saved)) {
       setSortBy(saved as SortBy)
@@ -47,50 +55,68 @@ export default function LibraryPage() {
     setSortByLoaded(true)
   }, [])
 
-  // Save sorting preference to localStorage
   useEffect(() => {
     if (sortByLoaded) {
       localStorage.setItem("library-sort-by", sortBy)
     }
   }, [sortBy, sortByLoaded])
 
-  // Reload data when sortBy or currentFolderId changes
+  const loadData = useCallback(async () => {
+    if (loadPromiseRef.current) {
+      return loadPromiseRef.current
+    }
+
+    const promise = (async () => {
+      try {
+        const folderSortBy = sortBy === "name" ? "name" : "createdAt"
+        
+        const [allFolders, displayBooks, allBooksData] = await Promise.all([
+          getAllFolders(folderSortBy),
+          getBooksByFolder(currentFolderId, sortBy),
+          getAllBooks("name")
+        ])
+        setFolders(allFolders)
+        setBooks(displayBooks)
+        setAllBooks(allBooksData)
+      } catch (error) {
+        console.error("Error loading library:", error)
+        toast({
+          title: "Error loading library",
+          description: "Failed to load your library",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+        loadPromiseRef.current = null
+      }
+    })()
+
+    loadPromiseRef.current = promise
+    return promise
+  }, [sortBy, currentFolderId, toast])
+
+  const scheduleLoadData = useCallback(() => {
+    if (loadTimeoutRef.current) clearTimeout(loadTimeoutRef.current)
+    loadTimeoutRef.current = setTimeout(() => {
+      loadData()
+    }, 120)
+  }, [loadData])
+
+  useEffect(() => {
+    return () => {
+      if (loadTimeoutRef.current) clearTimeout(loadTimeoutRef.current)
+    }
+  }, [])
+
   useEffect(() => {
     if (mounted) {
-      loadData()
+      scheduleLoadData()
     }
-  }, [sortBy, currentFolderId, mounted])
+  }, [sortBy, currentFolderId, mounted, scheduleLoadData])
 
-  const loadData = async () => {
-    try {
-      // Determine folder sorting based on current sortBy
-      const folderSortBy = sortBy === "name" ? "name" : "createdAt"
-      
-      const [allFolders, displayBooks, allBooksData] = await Promise.all([
-        getAllFolders(folderSortBy),
-        getBooksByFolder(currentFolderId, sortBy),
-        getAllBooks("name")
-      ])
-      setFolders(allFolders)
-      setBooks(displayBooks)
-      setAllBooks(allBooksData)
-    } catch (error) {
-      console.error("Error loading library:", error)
-      toast({
-        title: "Error loading library",
-        description: "Failed to load your library",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Sync currentFolderId with URL query param `folder`
   useEffect(() => {
     const folderSlug = searchParams.get("folder")
     if (folderSlug) {
-      // find folder by slug and set id
       ;(async () => {
         setIsFolderLoading(true)
         try {
@@ -98,7 +124,6 @@ export default function LibraryPage() {
           if (f) {
             setCurrentFolderId(f.id)
           } else {
-            // Invalid folder slug, redirect to library root
             router.replace("/library")
           }
         } finally {
@@ -110,6 +135,11 @@ export default function LibraryPage() {
       setIsFolderLoading(false)
     }
   }, [searchParams])
+
+  useEffect(() => {
+    setSearchTerm("")
+    setFilter("all")
+  }, [currentFolderId])
 
   const handleDeleteBook = async (bookId: string) => {
     setIsLoading(true)
@@ -146,13 +176,11 @@ export default function LibraryPage() {
     try {
       if (isEditing && folderId) {
         await updateFolder(folderId, { name })
-        // reload folders to get updated slug
         await loadData()
         toast({
           title: "Folder renamed",
           description: `Folder renamed to "${name}"`,
         })
-        // if we're viewing this folder, update URL to use new slug
         if (currentFolderId === folderId) {
           const updated = (await import("@/lib/db/folders")).getFolder(folderId)
           const f = await updated
@@ -166,7 +194,6 @@ export default function LibraryPage() {
           sortOrder: folders.length,
         }
         await saveFolder(newFolder)
-        // reload to include slug
         await loadData()
         toast({
           title: "Folder created",
@@ -229,7 +256,6 @@ export default function LibraryPage() {
 
   const handleRenameFolder = (folderId: string, currentName: string) => {
     setEditingFolder({ id: folderId, name: currentName })
-    // blur active element and delay opening to avoid popover focus/aria-hidden conflicts
     if (typeof window !== "undefined") {
       try { document.activeElement instanceof HTMLElement && document.activeElement.blur() } catch {}
     }
@@ -261,7 +287,6 @@ export default function LibraryPage() {
       return
     }
 
-    // If not found in memory, try to fetch from DB (covers just-uploaded-but-not-yet-in-state race)
     ;(async () => {
       try {
         const bookFromDb = await getBook(bookId)
@@ -293,7 +318,6 @@ export default function LibraryPage() {
     const bookTitle = movingBook.title
     const bookId = movingBook.id
 
-    // Close dialog first and allow UI to settle before heavy async work
     if (typeof window !== "undefined") {
       try {
         const active = document.activeElement as HTMLElement | null
@@ -306,7 +330,6 @@ export default function LibraryPage() {
     setMovingBook(null)
 
     try {
-      // wait a bit to let the dialog overlay/animation finish so it doesn't block clicks
       await new Promise((res) => setTimeout(res, 300))
       setIsLoading(true)
 
@@ -314,24 +337,18 @@ export default function LibraryPage() {
 
       await updateBook(bookId, { folderId: folderId || undefined })
 
-      // Optimistically update local state to avoid heavy reload blocking the UI
       setAllBooks((prev) =>
         prev.map((b) => (b.id === bookId ? { ...b, folderId: folderId || undefined } : b))
       )
 
       if (currentFolderId === null) {
-        // we're viewing root (no folder)
         if (folderId) {
-          // moved from root into a folder -> remove from displayed books
           setBooks((prev) => prev.filter((b) => b.id !== bookId))
         } else {
-          // root->root or update metadata
           setBooks((prev) => prev.map((b) => (b.id === bookId ? { ...b, folderId: undefined } : b)))
         }
       } else {
-        // viewing a specific folder
         if (folderId === currentFolderId) {
-          // moved into current folder -> add/update
           setBooks((prev) => {
             const exists = prev.some((b) => b.id === bookId)
             if (exists) return prev.map((b) => (b.id === bookId ? { ...b, folderId: folderId || undefined } : b))
@@ -339,12 +356,10 @@ export default function LibraryPage() {
             return book ? [ ...prev, { ...book, folderId: folderId || undefined } ] : prev
           })
         } else {
-          // moved out of current folder -> remove
           setBooks((prev) => prev.filter((b) => b.id !== bookId))
         }
       }
 
-      // reload in background to ensure consistency, but don't await to keep UI responsive
       loadData().catch((e) => console.error("Background reload failed:", e))
 
       toast({
@@ -358,7 +373,6 @@ export default function LibraryPage() {
         description: "Failed to move book",
         variant: "destructive",
       })
-      // attempt to reload to recover
       try { await loadData() } catch (_) {}
     } finally {
       setIsLoading(false)
@@ -379,18 +393,57 @@ export default function LibraryPage() {
 
   const currentFolder = currentFolderId ? folders.find((f) => f.id === currentFolderId) : null
   const displayedFolders = currentFolderId ? [] : folders
-  const displayedBooks = currentFolderId 
+  const displayedBooks = currentFolderId
     ? books.filter((b) => b.folderId === currentFolderId)
     : books.filter((b) => !b.folderId)
-  
-  const totalItems = displayedFolders.length + displayedBooks.length
+
+  const libraryStats = {
+    totalBooks: allBooks.length,
+    inProgress: allBooks.filter((b) => b.progress > 0 && b.progress < 99.5).length,
+    finished: allBooks.filter((b) => b.progress >= 99.5).length,
+    folders: folders.length,
+  }
+
+  const lastOpenedBook =
+    [...allBooks]
+      .filter((b) => typeof b.lastReadAt === "number")
+      .sort((a, b) => (b.lastReadAt || 0) - (a.lastReadAt || 0))[0] || null
+
+  const resumeBook = lastOpenedBook || displayedBooks[0] || null
+
+  const matchesFilter = (book: Book) => {
+    switch (filter) {
+      case "in-progress":
+        return book.progress > 0 && book.progress < 99.5
+      case "finished":
+        return book.progress >= 99.5
+      case "unread":
+        return !book.progress || book.progress < 1
+      case "all":
+      default:
+        return true
+    }
+  }
+
+  const searchLower = searchTerm.trim().toLowerCase()
+  const filteredFolders = displayedFolders.filter((folder) =>
+    folder.name.toLowerCase().includes(searchLower),
+  )
+  const filteredBooks = displayedBooks.filter(
+    (book) =>
+      matchesFilter(book) &&
+      (book.title.toLowerCase().includes(searchLower) ||
+        (book.author || "").toLowerCase().includes(searchLower)),
+  )
+
+  const visibleItemCount = filteredFolders.length + filteredBooks.length
 
   return (
-    <div className="min-h-screen bg-background scrollbar-hide overflow-y-auto">
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur border-b px-4 py-3">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white overflow-y-auto overflow-x-hidden scrollbar-hide dark:from-[#070b12] dark:via-[#0a0f18] dark:to-[#0d111b]">
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur border-b border-slate-200/70 px-3 py-3 sm:px-4 dark:border-white/10">
         <LibraryHeader
           currentFolderName={currentFolder?.name}
-          bookCount={totalItems}
+          bookCount={visibleItemCount}
           onBackToRoot={currentFolderId ? handleBackToRoot : undefined}
           onHomeClick={() => router.push("/")}
           onCreateFolder={() => {
@@ -402,54 +455,207 @@ export default function LibraryPage() {
         />
       </header>
 
-      <div className="container mx-auto max-w-5xl px-4 py-4">
+      <div className="container mx-auto w-full max-w-4xl px-3 pb-16 pt-4 sm:max-w-5xl sm:px-4">
         {isLoading || isFolderLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-        ) : totalItems === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="rounded-full bg-muted/40 p-6 mb-6">
-              <BookOpen className="h-12 w-12 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">
-              {currentFolderId ? "No books in this folder" : "No books yet"}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-              {currentFolderId 
-                ? "Move some books to this folder or upload new ones."
-                : "Upload your first EPUB to start your library."}
-            </p>
-            <UploadButton onUploadComplete={loadData} currentFolderId={currentFolderId} />
-          </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 pb-20">
-            {displayedFolders.map((folder) => (
-              <FolderCard
-                key={folder.id}
-                folder={folder}
-                bookCount={getFolderBookCount(folder.id)}
-                bookCovers={getFolderBookCovers(folder.id)}
-                onClick={() => handleOpenFolder(folder.id)}
-                onRename={() => handleRenameFolder(folder.id, folder.name)}
-                onDelete={() => handleDeleteFolder(folder.id)}
-              />
-            ))}
-            {displayedBooks.map((book) => (
-              <BookCard
-                key={book.id}
-                book={book}
-                onDelete={handleDeleteBook}
-                onMove={handleMoveBook}
-              />
-            ))}
+          <div className="space-y-6 pb-20">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <Card className="border-slate-200/70 bg-white/90 shadow-sm dark:border-primary/20 dark:bg-card/80">
+                <CardContent className="p-4 space-y-4 sm:p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">Continue</p>
+                      <p className="text-sm font-semibold">Quick resume</p>
+                    </div>
+                    <Badge variant="secondary" className="border-primary/30 bg-primary/10 text-primary">
+                      {currentFolder ? "This folder" : "Library"}
+                    </Badge>
+                  </div>
+                  {resumeBook ? (
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
+                      <div className="relative h-20 w-16 overflow-hidden rounded-md bg-muted sm:h-16 sm:w-12">
+                        {resumeBook.cover ? (
+                          <img src={resumeBook.cover} alt={resumeBook.title} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <BookOpen className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <p className="line-clamp-2 font-semibold leading-snug">{resumeBook.title}</p>
+                        <p className="truncate text-xs text-muted-foreground">{resumeBook.author || "Unknown author"}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {resumeBook.progress > 0 ? `${Math.round(resumeBook.progress)}% read` : "Not started yet"}
+                        </p>
+                      </div>
+                      <div className="flex w-full justify-start sm:w-auto sm:justify-end">
+                        <Button
+                          size="sm"
+                          onClick={() => router.push(`/reader/${resumeBook.id}/${resumeBook.currentChapter || 0}`)}
+                          className="w-full sm:w-auto"
+                        >
+                          <BookOpen className="mr-1.5 h-4 w-4" />
+                          {resumeBook.progress > 0 ? "Continue" : "Start"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-muted/70 bg-muted/30 p-4 text-sm text-muted-foreground">
+                      Upload your first EPUB to see it here.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/90 shadow-sm dark:bg-card/80 dark:border-white/10 border border-slate-200/70">
+                <CardContent className="p-4 sm:p-5">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Library at a glance</p>
+                  <div className="mt-4 grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-2xl font-bold">{libraryStats.totalBooks}</p>
+                      <p className="text-xs text-muted-foreground">Books</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{libraryStats.folders}</p>
+                      <p className="text-xs text-muted-foreground">Folders</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{libraryStats.inProgress}</p>
+                      <p className="text-xs text-muted-foreground">In progress</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{libraryStats.finished}</p>
+                      <p className="text-xs text-muted-foreground">Finished</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/90 shadow-sm dark:bg-card/80 dark:border-white/10 border border-slate-200/70">
+                <CardContent className="p-4 sm:p-5 space-y-3">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Context</p>
+                  <div className="flex flex-col gap-3 rounded-xl border border-muted/60 bg-muted/30 p-3 sm:flex-row sm:items-start">
+                    <div className="mt-1 h-2 w-2 rounded-full bg-primary" />
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold">
+                        {currentFolder ? currentFolder.name : "All folders"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {currentFolder
+                          ? "Browsing a specific folder. Move books to keep this space tidy."
+                          : "You can create folders to group arcs, genres, or series."}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center">
+                    <Upload className="h-4 w-4" />
+                    <span>Drag & drop EPUBs or use the upload button to keep everything local.</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="rounded-3xl border bg-white/90 p-4 shadow-sm dark:bg-card/70 dark:border-white/10 sm:p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                  {[
+                    { key: "all", label: "All" },
+                    { key: "in-progress", label: "In progress" },
+                    { key: "finished", label: "Finished" },
+                    { key: "unread", label: "Unread" },
+                  ].map((option) => (
+                    <Button
+                      key={option.key}
+                      size="sm"
+                      variant={filter === option.key ? "default" : "outline"}
+                      onClick={() => setFilter(option.key as LibraryFilter)}
+                      className="rounded-full px-4"
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+                  <Input
+                    placeholder="Search by title or author"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full min-w-[200px]"
+                  />
+                  <UploadButton
+                    onUploadComplete={loadData}
+                    className="h-10 w-full justify-center sm:w-auto"
+                    currentFolderId={currentFolderId}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      Add EPUB
+                    </div>
+                  </UploadButton>
+                </div>
+              </div>
+
+              {visibleItemCount === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="mb-4 rounded-full bg-muted/40 p-6">
+                    <BookOpen className="h-10 w-10 text-muted-foreground" />
+                  </div>
+                  <h3 className="mb-2 text-lg font-semibold">
+                    {searchTerm
+                      ? `No matches for "${searchTerm}"`
+                      : currentFolderId
+                        ? "No books in this folder"
+                        : "No books yet"}
+                  </h3>
+                  <p className="mb-6 max-w-sm text-sm text-muted-foreground">
+                    {searchTerm
+                      ? "Try another title, author, or clear the filter."
+                      : "Upload an EPUB to start reading or move books into this folder."}
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <UploadButton onUploadComplete={loadData} currentFolderId={currentFolderId} />
+                    {(searchTerm || filter !== "all") && (
+                      <Button variant="ghost" onClick={() => { setSearchTerm(""); setFilter("all") }}>
+                        Clear filters
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="grid gap-4 pt-2 sm:grid-cols-1 md:grid-cols-2">
+                  {filteredFolders.map((folder) => (
+                    <FolderCard
+                      key={folder.id}
+                      folder={folder}
+                      bookCount={getFolderBookCount(folder.id)}
+                      bookCovers={getFolderBookCovers(folder.id)}
+                      onClick={() => handleOpenFolder(folder.id)}
+                      onRename={() => handleRenameFolder(folder.id, folder.name)}
+                      onDelete={() => handleDeleteFolder(folder.id)}
+                    />
+                  ))}
+                  {filteredBooks.map((book) => (
+                    <BookCard
+                      key={book.id}
+                      book={book}
+                      onDelete={handleDeleteBook}
+                      onMove={handleMoveBook}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {!isLoading && !isFolderLoading && totalItems > 0 && (
+      {!isLoading && !isFolderLoading && (books.length > 0 || folders.length > 0) && (
         <div className="fixed bottom-8 right-6 z-50 pb-[env(safe-area-inset-bottom)]">
-          <UploadButton onUploadComplete={loadData} className="h-14 w-14 rounded-full shadow-lg p-0" currentFolderId={currentFolderId}>
+          <UploadButton onUploadComplete={loadData} className="h-14 w-14 rounded-full p-0 shadow-lg" currentFolderId={currentFolderId}>
             <Upload className="h-6 w-6" />
           </UploadButton>
         </div>

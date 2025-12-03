@@ -1,5 +1,3 @@
-// HTML sanitizer
-
 const ALLOWED_TAGS = new Set([
   "p",
   "div",
@@ -68,18 +66,15 @@ function sanitizeNode(node: Node): void {
       const element = child as HTMLElement
       const tagName = element.tagName.toLowerCase()
 
-      // Remove disallowed tags
       if (!ALLOWED_TAGS.has(tagName)) {
         nodesToRemove.push(child)
         return
       }
 
-      // Remove disallowed attributes
       Array.from(element.attributes).forEach((attr) => {
         if (!ALLOWED_ATTRIBUTES.has(attr.name)) {
           element.removeAttribute(attr.name)
         } else {
-          // Check dangerous protocols
           if (attr.name === "href" || attr.name === "src") {
             const value = attr.value.toLowerCase().trim()
             if (DANGEROUS_PROTOCOLS.some((protocol) => value.startsWith(protocol))) {
@@ -89,14 +84,12 @@ function sanitizeNode(node: Node): void {
         }
       })
 
-      // Remove event handlers
       Array.from(element.attributes).forEach((attr) => {
         if (attr.name.startsWith("on")) {
           element.removeAttribute(attr.name)
         }
       })
 
-      // Sanitize children
       sanitizeNode(child)
     } else if (child.nodeType === Node.COMMENT_NODE) {
       nodesToRemove.push(child)

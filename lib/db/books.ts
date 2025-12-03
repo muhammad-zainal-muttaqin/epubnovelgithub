@@ -1,5 +1,3 @@
-// Book repository
-
 import { STORES } from "../keys"
 import type { Book } from "../types"
 import { getAllFromStore, getFromStore, putInStore, deleteFromStore, getByIndex } from "./idb"

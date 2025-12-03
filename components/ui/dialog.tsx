@@ -54,7 +54,6 @@ function DialogContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
 }) {
-  // generate an accessible description id if user didn't provide one
   const generatedDescriptionId = React.useId()
   const ariaDescribedBy = (props as any)["aria-describedby"] || generatedDescriptionId
 
@@ -70,7 +69,6 @@ function DialogContent({
         )}
         {...props}
       >
-        {/* render an offscreen element to satisfy accessibility checks when we generated the id */}
         {ariaDescribedBy === generatedDescriptionId && <div id={generatedDescriptionId} className="sr-only" />}
         {children}
         {showCloseButton && (

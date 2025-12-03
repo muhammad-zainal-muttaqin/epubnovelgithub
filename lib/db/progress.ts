@@ -1,5 +1,3 @@
-// Progress repository
-
 import { STORES } from "../keys"
 import type { Progress } from "../types"
 import { getFromStore, putInStore } from "./idb"

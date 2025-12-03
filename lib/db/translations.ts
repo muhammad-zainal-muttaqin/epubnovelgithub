@@ -1,5 +1,3 @@
-// Translation repository
-
 import { STORES } from "../keys"
 import { getFromStore, putInStore } from "./idb"
 

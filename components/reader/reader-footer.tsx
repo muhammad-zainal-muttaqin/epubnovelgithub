@@ -29,9 +29,8 @@ export function ReaderFooter({
   theme,
 }: ReaderFooterProps) {
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 smooth-transition">
+    <footer className="fixed bottom-0 left-0 right-0 z-40 border-t bg-[#f9f7f1]/95 backdrop-blur supports-[backdrop-filter]:bg-[#f9f7f1]/60 dark:bg-background/95 dark:supports-[backdrop-filter]:bg-background/60 smooth-transition">
       <div className="container mx-auto max-w-5xl px-4 py-3">
-        {/* Mobile toolbar: equal spacing using grid */}
         <div className="sm:hidden grid grid-cols-7 items-center gap-0">
           <Button variant="ghost" size="sm" onClick={onChapterListToggle} className="h-9 w-10 justify-center">
             <List className="h-4 w-4" />
@@ -58,9 +57,7 @@ export function ReaderFooter({
           </Button>
         </div>
 
-        {/* Desktop/tablet toolbar */}
         <div className="hidden sm:flex items-center justify-between gap-2">
-          {/* Controls */}
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={onChapterListToggle}>
               <List className="h-4 w-4" />
@@ -78,7 +75,6 @@ export function ReaderFooter({
             </Button>
           </div>
 
-          {/* Back to Top */}
           <div className="flex items-center">
             <Button variant="ghost" size="sm" onClick={onBackToTop}>
               <ArrowUp className="h-4 w-4" />
@@ -86,7 +82,6 @@ export function ReaderFooter({
             </Button>
           </div>
 
-          {/* Navigation */}
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={onPrev} disabled={!hasPrev}>
               <ChevronLeft className="h-4 w-4" />
