@@ -12,6 +12,7 @@ import { BookCard } from "@/components/library/book-card"
 import { FolderCard } from "@/components/library/folder-card"
 import { CreateFolderDialog } from "@/components/library/create-folder-dialog"
 import { MoveBookDialog } from "@/components/library/move-book-dialog"
+import { RenameBookDialog } from "@/components/library/rename-book-dialog"
 import { LibraryHeader } from "@/components/library/library-header"
 import { Loader2, BookOpen, Upload } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -36,6 +37,8 @@ export default function LibraryPage() {
   const [editingFolder, setEditingFolder] = useState<{ id: string; name: string } | null>(null)
   const [moveBookOpen, setMoveBookOpen] = useState(false)
   const [movingBook, setMovingBook] = useState<Book | null>(null)
+  const [renameBookOpen, setRenameBookOpen] = useState(false)
+  const [renamingBook, setRenamingBook] = useState<Book | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [filter, setFilter] = useState<LibraryFilter>("all")
   const { toast } = useToast()
@@ -379,6 +382,57 @@ export default function LibraryPage() {
     }
   }
 
+  const handleRenameBook = (bookId: string) => {
+    const book = books.find((b) => b.id === bookId) || allBooks.find((b) => b.id === bookId)
+    if (book) {
+      setRenamingBook(book)
+      setRenameBookOpen(true)
+    }
+  }
+
+  const handleRenameBookSubmit = async (title: string, author: string) => {
+    if (!renamingBook) return
+
+    const bookId = renamingBook.id
+    
+    if (typeof window !== "undefined") {
+      try { document.activeElement instanceof HTMLElement && document.activeElement.blur() } catch {}
+    }
+    setRenameBookOpen(false)
+    setRenamingBook(null)
+
+    try {
+      await new Promise((res) => setTimeout(res, 300))
+      setIsLoading(true)
+
+      await updateBook(bookId, { title, author })
+      
+      // Update local state
+      setAllBooks((prev) => 
+        prev.map((b) => (b.id === bookId ? { ...b, title, author } : b))
+      )
+      setBooks((prev) =>
+        prev.map((b) => (b.id === bookId ? { ...b, title, author } : b))
+      )
+
+      await loadData()
+      
+      toast({
+        title: "Book updated",
+        description: "Book details have been saved",
+      })
+    } catch (error) {
+      console.error("Error renaming book:", error)
+      toast({
+        title: "Update failed",
+        description: "Failed to update book details",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const getFolderBookCovers = (folderId: string): string[] => {
     const folderBooks = allBooks.filter((b) => b.folderId === folderId)
     return folderBooks
@@ -644,6 +698,7 @@ export default function LibraryPage() {
                       book={book}
                       onDelete={handleDeleteBook}
                       onMove={handleMoveBook}
+                      onRename={handleRenameBook}
                     />
                   ))}
                 </div>
@@ -676,6 +731,14 @@ export default function LibraryPage() {
         folders={folders}
         currentFolderId={movingBook?.folderId}
         bookTitle={movingBook?.title || ""}
+      />
+
+      <RenameBookDialog
+        open={renameBookOpen}
+        onOpenChange={setRenameBookOpen}
+        onSubmit={handleRenameBookSubmit}
+        initialTitle={renamingBook?.title || ""}
+        initialAuthor={renamingBook?.author || ""}
       />
     </div>
   )

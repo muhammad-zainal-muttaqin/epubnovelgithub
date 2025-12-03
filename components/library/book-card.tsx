@@ -1,7 +1,7 @@
 "use client"
 
 import { formatDistanceToNow } from "date-fns"
-import { BookOpen, Clock3, FolderInput, MoreVertical, Trash2 } from "lucide-react"
+import { BookOpen, Clock3, FolderInput, MoreVertical, Trash2, Pencil } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -13,9 +13,10 @@ interface BookCardProps {
   book: Book
   onDelete: (bookId: string) => void
   onMove?: (bookId: string) => void
+  onRename?: (bookId: string) => void
 }
 
-export function BookCard({ book, onDelete, onMove }: BookCardProps) {
+export function BookCard({ book, onDelete, onMove, onRename }: BookCardProps) {
   const router = useRouter()
 
   const progressValue = Math.max(0, Math.min(100, Math.round(book.progress || 0)))
@@ -86,6 +87,12 @@ export function BookCard({ book, onDelete, onMove }: BookCardProps) {
                     <DropdownMenuItem onClick={() => setTimeout(handleMove, 50)}>
                       <FolderInput className="mr-2 h-4 w-4" />
                       Move to folder
+                    </DropdownMenuItem>
+                  )}
+                  {onRename && (
+                    <DropdownMenuItem onClick={() => onRename(book.id)}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Rename
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={handleDelete} className="text-destructive">
