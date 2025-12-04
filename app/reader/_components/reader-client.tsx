@@ -672,17 +672,17 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
       <div className="relative z-10 flex h-full flex-col">
         <ProgressBar progress={overallProgress} />
 
-        {/* Fixed scroll fade overlays - covers only the gap area */}
+        {/* Fixed scroll fade overlays - creates smooth scroll-away effect */}
         <div 
-          className="pointer-events-none fixed top-0 left-0 right-0 z-30 h-18"
+          className="pointer-events-none fixed top-0 left-0 right-0 z-30 h-16"
           style={{
-            background: "linear-gradient(to bottom, var(--reader-overlay, #f0ede5) 0%, var(--reader-overlay, #f0ede5) 30%, transparent 100%)"
+            background: "linear-gradient(to bottom, var(--reader-bg, #f9f7f1) 0%, var(--reader-bg, #f9f7f1) 40%, transparent 100%)"
           }}
         />
         <div 
-          className="pointer-events-none fixed bottom-0 left-0 right-0 z-30 h-18"
+          className="pointer-events-none fixed bottom-0 left-0 right-0 z-30 h-16"
           style={{
-            background: "linear-gradient(to top, var(--reader-overlay, #f0ede5) 0%, var(--reader-overlay, #f0ede5) 30%, transparent 100%)"
+            background: "linear-gradient(to top, var(--reader-bg, #f9f7f1) 0%, var(--reader-bg, #f9f7f1) 40%, transparent 100%)"
           }}
         />
 
