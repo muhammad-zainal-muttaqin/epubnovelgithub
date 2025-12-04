@@ -356,6 +356,12 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
 
   for (const chapter of chapters) {
     chapter.content = rewriteInternalLinks(chapter.content, hrefToIndexMap, bookId, chapter.href)
+    if (chapter.index === 0 && chapter.title.toLowerCase() === "cover") {
+      const coverImage = cover || (imageMap.size > 0 ? Array.from(imageMap.values())[0] : undefined)
+      if (coverImage) {
+        chapter.content = `<img src="${coverImage}" style="width: 100%; height: auto; display: block; margin: 0 auto;" alt="Cover" />${chapter.content}`
+      }
+    }
   }
 
   const isChapterLike = (title: string) => 
