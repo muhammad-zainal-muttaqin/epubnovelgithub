@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useLayoutEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 
 interface ChapterContentProps {
   content: string
@@ -27,6 +28,7 @@ export function ChapterContent({
   pendingChunks = 0,
   initialScrollPercent,
 }: ChapterContentProps) {
+  const router = useRouter()
   const contentRef = useRef<HTMLDivElement>(null)
   const readyRef = useRef(false)
 
@@ -52,6 +54,30 @@ export function ChapterContent({
       return () => element.removeEventListener("scroll", handleScroll)
     }
   }, [onScroll])
+
+  useEffect(() => {
+    const handleLinkClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      const link = target.closest("a")
+      
+      if (!link) return
+      
+      const href = link.getAttribute("href")
+      if (!href) return
+      
+      const match = href.match(/\?bookId=([^&]+)&chapterId=(\d+)/)
+      if (match) {
+        e.preventDefault()
+        router.push(href)
+      }
+    }
+
+    const element = contentRef.current
+    if (element) {
+      element.addEventListener("click", handleLinkClick)
+      return () => element.removeEventListener("click", handleLinkClick)
+    }
+  }, [router])
 
   useLayoutEffect(() => {
     if (!contentRef.current) return
