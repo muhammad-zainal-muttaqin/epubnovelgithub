@@ -1,7 +1,7 @@
 import { saveBook } from "./db/books"
 import { saveChapters } from "./db/chapters"
 import { getBook } from "./db/books"
-import demoData from "./demo-data.json"
+import { demoData } from "./demo-data"
 import type { Chapter } from "./types"
 
 const DEMO_LOADED_KEY = "demo-epub-loaded"
