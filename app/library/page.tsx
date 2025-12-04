@@ -517,7 +517,7 @@ export default function LibraryPage() {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <div className="space-y-6 pb-20">
+          <div className="space-y-4 pb-20">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Card className="border-slate-200/70 bg-white/90 shadow-sm dark:border-primary/20 dark:bg-card/80">
                 <CardContent className="p-4 space-y-4 sm:p-5">
