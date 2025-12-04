@@ -1,6 +1,6 @@
 # EPUB Novel Reader
 
-A modern, privacy-first web application for reading EPUB novels with AI translation support. Everything runs locally in your browser—no account needed.
+A modern, privacy-first web application for reading EPUB novels with AI translation support. Everything runs locally in your browser, no account needed.
 
 ## ✨ Features
 
