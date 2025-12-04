@@ -77,6 +77,7 @@ export function UploadButton({ onUploadComplete, className, children, currentFol
         disabled={isUploading}
         className="hidden"
         id={uploadId}
+        name={uploadId}
       />
       <label htmlFor={uploadId}>
         <Button disabled={isUploading} asChild className={className}>

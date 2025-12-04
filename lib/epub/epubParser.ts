@@ -227,8 +227,16 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
     const coverItem = opfDoc.querySelector(`item[id="${coverId}"]`)
     const coverHref = coverItem?.getAttribute("href")
     if (coverHref) {
-      const coverPath = normalizePath(resolvePath(basePath, coverHref))
-      cover = imageMap.get(normalizePath(coverHref)) || imageMap.get(coverPath)
+      const normalized = normalizePath(coverHref)
+      cover = imageMap.get(normalized) || imageMap.get(normalizePath(resolvePath(basePath, coverHref)))
+      if (!cover) {
+        for (const [key, value] of imageMap.entries()) {
+          if (key.endsWith(normalized.split("/").pop()!)) {
+            cover = value
+            break
+          }
+        }
+      }
     }
   }
 
@@ -249,73 +257,70 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
   const chapters: Chapter[] = []
   const bookId = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`
 
-  spineItems.forEach((itemref, i) => {
+  for (let i = 0; i < spineItems.length; i++) {
+    const itemref = spineItems[i]
     const idref = itemref.getAttribute("idref")
-    if (!idref) return
+    if (!idref) continue
 
     const item = opfDoc.querySelector(`item[id="${idref}"]`)
-    if (!item) return
+    if (!item) continue
 
     const href = item.getAttribute("href")
-    if (!href) return
+    if (!href) continue
 
-    zip.file(resolvePath(basePath, href))?.async("text").then(async (chapterContent) => {
-      try {
-        chapterContent = replaceImagePaths(chapterContent, imageMap, href)
-        const sanitized = sanitizeHtml(chapterContent)
-        const chapterDoc = parser.parseFromString(chapterContent, "text/html")
+    try {
+      const chapterFile = zip.file(resolvePath(basePath, href))
+      if (!chapterFile) continue
 
-        let chapterTitle = chapterDoc.querySelector("h1, h2, h3")?.textContent?.trim() || ""
+      let chapterContent = await chapterFile.async("text")
+      chapterContent = replaceImagePaths(chapterContent, imageMap, href)
+      const sanitized = sanitizeHtml(chapterContent)
+      const chapterDoc = parser.parseFromString(chapterContent, "text/html")
 
-        if (!chapterTitle || chapterTitle === title || chapterTitle.length > 100) {
-          const filename = href.split("/").pop()?.replace(/\.(xhtml|html|xml)$/i, "") || ""
-          const lowerFilename = filename.toLowerCase()
+      let chapterTitle = chapterDoc.querySelector("h1, h2, h3")?.textContent?.trim() || ""
 
-          const titleMap: { [key: string]: (n: string) => string } = {
-            cover: () => "Cover",
-            copyright: () => "Copyright",
-            toc: () => "Contents", contents: () => "Contents",
-            titlepage: () => "Title Page", title: () => "Title Page",
-            dedication: () => "Dedication",
-            preface: () => "Preface", foreword: () => "Preface",
-            prologue: () => "Prologue",
-            epilogue: () => "Epilogue",
-            afterword: () => "Afterword"
-          }
+      if (!chapterTitle || chapterTitle === title || chapterTitle.length > 100) {
+        const filename = href.split("/").pop()?.replace(/\.(xhtml|html|xml)$/i, "") || ""
+        const lowerFilename = filename.toLowerCase()
 
-          for (const [key, fn] of Object.entries(titleMap)) {
-            if (lowerFilename.includes(key)) {
-              chapterTitle = fn(filename)
-              break
-            }
-          }
+        const titleMap: { [key: string]: string } = {
+          cover: "Cover", copyright: "Copyright", toc: "Contents", contents: "Contents",
+          titlepage: "Title Page", title: "Title Page", dedication: "Dedication",
+          preface: "Preface", foreword: "Preface", prologue: "Prologue", epilogue: "Epilogue", afterword: "Afterword"
+        }
 
-          if (!chapterTitle) {
-            if (lowerFilename.match(/^(ch|chap|chapter)[\s_-]*\d+/)) {
-              const numMatch = filename.match(/\d+/)
-              chapterTitle = numMatch ? `Chapter ${numMatch[0]}` : filename.replace(/[\s_-]+/g, " ").replace(/\b\w/g, l => l.toUpperCase())
-            } else if (lowerFilename.match(/^(insert|illustration)[\s_-]*/)) {
-              const numMatch = filename.match(/\d+/)
-              chapterTitle = numMatch ? `Insert ${numMatch[1]}` : "Insert"
-            } else {
-              chapterTitle = filename.replace(/[\s_-]+/g, " ").replace(/\b\w/g, l => l.toUpperCase())
-            }
+        for (const [key, value] of Object.entries(titleMap)) {
+          if (lowerFilename.includes(key)) {
+            chapterTitle = value
+            break
           }
         }
 
-        chapters.push({
-          id: `${bookId}-chapter-${i}`,
-          bookId,
-          index: i,
-          title: chapterTitle || `Chapter ${i + 1}`,
-          content: sanitized,
-          href: normalizePath(href),
-        })
-      } catch (error) {
-        console.error("Error processing chapter", i, ":", error)
+        if (!chapterTitle) {
+          if (lowerFilename.match(/^(ch|chap|chapter)[\s_-]*\d+/)) {
+            const numMatch = filename.match(/\d+/)
+            chapterTitle = numMatch ? `Chapter ${numMatch[0]}` : filename.replace(/[\s_-]+/g, " ").replace(/\b\w/g, l => l.toUpperCase())
+          } else if (lowerFilename.match(/^(insert|illustration)[\s_-]*/)) {
+            const numMatch = filename.match(/\d+/)
+            chapterTitle = numMatch ? `Insert ${numMatch[0]}` : "Insert"
+          } else {
+            chapterTitle = filename.replace(/[\s_-]+/g, " ").replace(/\b\w/g, l => l.toUpperCase())
+          }
+        }
       }
-    }).catch(error => console.error("Error processing chapter", i, ":", error))
-  })
+
+      chapters.push({
+        id: `${bookId}-chapter-${i}`,
+        bookId,
+        index: i,
+        title: chapterTitle || `Chapter ${i + 1}`,
+        content: sanitized,
+        href: normalizePath(href),
+      })
+    } catch (error) {
+      console.error("Error processing chapter", i, ":", error)
+    }
+  }
 
   const hrefToIndexMap = new Map<string, number>()
   chapters.forEach((chapter, index) => {

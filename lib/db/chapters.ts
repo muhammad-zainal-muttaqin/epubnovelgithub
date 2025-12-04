@@ -21,9 +21,7 @@ export async function saveChapter(chapter: Chapter): Promise<void> {
 }
 
 export async function saveChapters(chapters: Chapter[]): Promise<void> {
-  for (const chapter of chapters) {
-    await saveChapter(chapter)
-  }
+  await Promise.all(chapters.map(saveChapter))
 }
 
 export async function deleteChaptersByBook(bookId: string): Promise<void> {
