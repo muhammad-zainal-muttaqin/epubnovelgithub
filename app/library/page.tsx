@@ -618,7 +618,7 @@ export default function LibraryPage() {
                       asChild
                       className="w-full sm:w-auto"
                     >
-                      <a href="https://gist.githubusercontent.com/muhammad-zainal-muttaqin/example-epub/raw/main/example.epub" download>
+                      <a href="https://github.com/muhammad-zainal-muttaqin/epubnovelgithub/raw/main/example/Unnamed%20Memory%20-after%20the%20end-%201.epub" download>
                         Download Example EPUB
                       </a>
                     </Button>

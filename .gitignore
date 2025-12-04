@@ -28,6 +28,10 @@ bun-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# example files (demo EPUB for dev only, converted to JSON for production)
-/example/
+# scripts directory (not needed in production)
 /scripts/
+
+# example EPUB for download
+!example/
+example/*
+!example/*.epub
