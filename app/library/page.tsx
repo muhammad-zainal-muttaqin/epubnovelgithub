@@ -607,9 +607,21 @@ export default function LibraryPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center">
-                    <Upload className="h-4 w-4" />
-                    <span>Drag & drop EPUBs or use the upload button to keep everything local.</span>
+                  <div className="space-y-2">
+                    <div className="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center">
+                      <Upload className="h-4 w-4" />
+                      <span>Drag & drop EPUBs or use the upload button to keep everything local.</span>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      asChild
+                      className="w-full sm:w-auto"
+                    >
+                      <a href="https://gist.githubusercontent.com/muhammad-zainal-muttaqin/example-epub/raw/main/example.epub" download>
+                        Download Example EPUB
+                      </a>
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
