@@ -151,7 +151,7 @@ export default function HomePage() {
       <footer className="border-t border-slate-200/70 bg-white/90 text-slate-700 backdrop-blur dark:border-white/5 dark:bg-[#0a0f18]/90 dark:text-muted-foreground">
         <div className="container mx-auto max-w-6xl px-4 py-4 sm:py-6">
           <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-            <p className="text-sm font-medium">&copy; 2025 EPUB Novel Reader</p>
+            <p className="text-sm font-medium">&copy; 2026 EPUB Novel Reader</p>
             <div className="flex items-center gap-4">
               <Button variant="link" onClick={() => router.push("/privacy")} className="text-sm font-medium text-slate-700 dark:text-muted-foreground">
                 Privacy
