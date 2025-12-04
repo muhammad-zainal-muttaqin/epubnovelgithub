@@ -24,6 +24,8 @@ jobs:
         run: bun install
 
       - name: Build
+        env:
+          NEXT_PUBLIC_BASE_PATH: /epubnovelgithub
         run: bun next build
 
       - name: Upload artifact
