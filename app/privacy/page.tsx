@@ -1,208 +1,145 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { BookOpen, ArrowLeft, Shield, Database, Eye, Lock } from "lucide-react"
+import { BookOpen, ArrowLeft, Shield, Database, Eye, Lock, Globe } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
+import { Moon, Sun } from "lucide-react"
+import { toggleThemeWithTransition } from "@/lib/theme-transition"
+import { useEffect, useState } from "react"
 
 export default function PrivacyPage() {
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => setMounted(true), [])
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900 dark:from-[#070b12] dark:via-[#0a0f18] dark:to-[#0d111b] dark:text-[#e8ecf5]">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+        <div className="absolute -left-32 top-20 h-72 w-72 rounded-full bg-blue-500/10 blur-[100px] dark:bg-blue-500/20" />
+        <div className="absolute right-0 bottom-0 h-96 w-96 rounded-full bg-emerald-400/10 blur-[100px] dark:bg-emerald-500/10" />
+      </div>
+
       {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto max-w-5xl flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-6 w-6" />
-            <h1 className="text-xl font-bold">EPUB Novel Reader</h1>
+      <header className="sticky top-0 z-40 w-full border-b border-slate-200/50 bg-white/80 backdrop-blur-md dark:border-white/5 dark:bg-[#0a0f18]/80">
+        <div className="container mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
+          <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => router.push("/")}>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary dark:bg-white/5">
+              <BookOpen className="h-4 w-4" />
+            </div>
+            <span className="text-sm font-bold tracking-tight">EPUB Reader</span>
           </div>
-          <Button variant="outline" onClick={() => router.push("/")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
+          
+          <nav className="flex items-center gap-1">
+             {mounted && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => toggleThemeWithTransition(e, setTheme, theme)}
+                className="h-8 w-8 text-muted-foreground"
+              >
+                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span className="sr-only">Toggle theme</span>
+              </Button>
+            )}
+          </nav>
         </div>
       </header>
 
       {/* Content */}
-      <main className="container mx-auto px-4 py-16 max-w-5xl">
-        <div className="text-center mb-12">
-          <Shield className="h-16 w-16 mx-auto mb-4 text-primary" />
-          <h1 className="text-4xl font-bold mb-4">Privacy Policy</h1>
-          <p className="text-lg text-muted-foreground">
-            Your privacy and data security are our top priorities
+      <main className="flex-1 container mx-auto px-4 py-12 max-w-3xl">
+        <div className="text-center mb-12 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <div className="mx-auto w-fit rounded-full border border-emerald-200/50 bg-emerald-50/50 px-3 py-1 text-xs font-medium text-emerald-600 backdrop-blur dark:border-emerald-900/30 dark:bg-emerald-900/10 dark:text-emerald-300">
+            <Shield className="inline-block mr-1.5 h-3 w-3" />
+            Your Privacy First
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Privacy Policy</h1>
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+            We believe your reading habits are personal. That's why we built an app that doesn't spy on you.
           </p>
         </div>
 
-        <div className="space-y-8">
-          {/* Data Storage */}
-          <section className="p-6 rounded-lg border">
-            <div className="flex items-center gap-3 mb-4">
-              <Database className="h-6 w-6 text-primary" />
-              <h2 className="text-2xl font-semibold">Data Storage</h2>
-            </div>
-            <div className="space-y-4 text-muted-foreground">
-              <p>
-                <strong className="text-foreground">Local Storage Only:</strong> All your EPUB files, 
-                reading progress, and settings are stored locally in your browser using IndexedDB. 
-                Nothing is uploaded to external servers.
-              </p>
-              <p>
-                <strong className="text-foreground">Browser-Based:</strong> Your data remains on your device 
-                and is only accessible to you. We cannot access your files or reading history.
-              </p>
-              <p>
-                <strong className="text-foreground">No Cloud Sync:</strong> Unlike other reading apps, 
-                we don't sync your data to the cloud, ensuring complete privacy.
-              </p>
-            </div>
-          </section>
-
-          {/* Data Collection */}
-          <section className="p-6 rounded-lg border">
-            <div className="flex items-center gap-3 mb-4">
-              <Eye className="h-6 w-6 text-primary" />
-              <h2 className="text-2xl font-semibold">Data Collection</h2>
-            </div>
-            <div className="space-y-4 text-muted-foreground">
-              <p>
-                <strong className="text-foreground">Zero Data Collection:</strong> We do not collect, 
-                store, or transmit any personal information or reading data.
-              </p>
-              <p>
-                <strong className="text-foreground">No Analytics:</strong> We don't use tracking pixels, 
-                analytics, or any data collection tools.
-              </p>
-              <p>
-                <strong className="text-foreground">No Cookies:</strong> We don't use cookies for tracking 
-                or data collection purposes.
-              </p>
-            </div>
-          </section>
-
-          {/* Security */}
-          <section className="p-6 rounded-lg border">
-            <div className="flex items-center gap-3 mb-4">
-              <Lock className="h-6 w-6 text-primary" />
-              <h2 className="text-2xl font-semibold">Security</h2>
-            </div>
-            <div className="space-y-4 text-muted-foreground">
-              <p>
-                <strong className="text-foreground">Client-Side Processing:</strong> All EPUB parsing 
-                and processing happens in your browser, not on external servers.
-              </p>
-              <p>
-                <strong className="text-foreground">No External API Calls:</strong> The app doesn't 
-                make any external API calls that could transmit or compromise your data.
-              </p>
-              <p>
-                <strong className="text-foreground">Open Source:</strong> The entire codebase is open source, 
-                allowing you to verify our privacy claims.
-              </p>
-            </div>
-          </section>
-
-          {/* Technical Details */}
-          <section className="p-6 rounded-lg border">
-            <h2 className="text-2xl font-semibold mb-4">Technical Implementation</h2>
-            <div className="space-y-4 text-muted-foreground">
-              <div>
-                <strong className="text-foreground">IndexedDB:</strong> Your EPUB files and metadata are stored 
-                in your browser's IndexedDB, which is a local database that only your browser can access.
-              </div>
-              <div>
-                <strong className="text-foreground">LocalStorage:</strong> Reading settings and preferences 
-                are stored in localStorage, which is also local to your browser.
-              </div>
-              <div>
-                <strong className="text-foreground">No Server Communication:</strong> The app runs entirely 
-                in your browser and doesn't communicate with any external servers.
-              </div>
-            </div>
-          </section>
-
-          {/* Third-Party & External Resources */}
-          <section className="p-6 rounded-lg border">
-            <h2 className="text-2xl font-semibold mb-4">Third-Party Resources</h2>
-            <div className="space-y-4 text-muted-foreground">
-              <p>
-                <strong className="text-foreground">Static Assets Only:</strong> All fonts, styles, 
-                and resources are bundled with the application. We don't load assets from external CDNs.
-              </p>
-              <p>
-                <strong className="text-foreground">No Third-Party Scripts:</strong> We don't use 
-                Google Analytics, Facebook Pixel, or any third-party tracking scripts.
-              </p>
-              <p>
-                <strong className="text-foreground">Hosting Platform:</strong> The application is hosted 
-                on a web platform. While the app itself doesn't collect data, the hosting provider may 
-                collect standard server logs (IP addresses, access times) for infrastructure purposes only.
-              </p>
-            </div>
-          </section>
-
-          {/* Data Deletion */}
-          <section className="p-6 rounded-lg border">
-            <h2 className="text-2xl font-semibold mb-4">Data Deletion</h2>
-            <div className="space-y-4 text-muted-foreground">
-              <p>
-                <strong className="text-foreground">Complete Control:</strong> Since all data is stored 
-                locally in your browser, you have full control over deletion.
-              </p>
-              <p>
-                <strong className="text-foreground">How to Delete:</strong> You can clear your data by:
-              </p>
-              <ul className="list-disc list-inside space-y-2 ml-4">
-                <li>Clearing your browser's site data/storage for this website</li>
-                <li>Clearing your browser's cache and cookies</li>
-                <li>Using your browser's developer tools to delete IndexedDB data</li>
-              </ul>
-              <p>
-                <strong className="text-foreground">Permanent Deletion:</strong> Once you clear your 
-                browser data, all your EPUB files and reading progress are permanently deleted from your device. 
-                We cannot recover them as we never had access to them.
-              </p>
-            </div>
-          </section>
-
-          {/* Browser Considerations */}
-          <section className="p-6 rounded-lg border">
-            <h2 className="text-2xl font-semibold mb-4">Browser & Device Considerations</h2>
-            <div className="space-y-4 text-muted-foreground">
-              <p>
-                <strong className="text-foreground">Browser Privacy:</strong> While our application 
-                doesn't collect data, your browser itself (Chrome, Firefox, Safari, etc.) may have 
-                its own tracking or telemetry features. Please check your browser's privacy settings.
-              </p>
-              <p>
-                <strong className="text-foreground">Incognito/Private Mode:</strong> Using private/incognito 
-                mode will prevent data persistence. Your books and progress will be deleted when you close 
-                the private browsing session.
-              </p>
-              <p>
-                <strong className="text-foreground">Multiple Devices:</strong> Since data is stored locally, 
-                your library and progress are device-specific and won't sync across devices automatically.
-              </p>
-            </div>
-          </section>
-
-          {/* Contact */}
-          <section className="p-6 rounded-lg border bg-muted/50">
-            <h2 className="text-2xl font-semibold mb-4">Questions About Privacy?</h2>
-            <p className="text-muted-foreground mb-4">
-              If you have any questions about our privacy practices or want to verify our claims, 
-              you can examine the source code or contact us.
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-100">
+          <PrivacySection 
+            icon={<Database className="h-5 w-5 text-blue-500" />}
+            title="Data Storage"
+          >
+            <p>
+              <strong className="text-slate-900 dark:text-slate-200">Local Storage Only:</strong> All your EPUB files, reading progress, and settings are stored locally in your browser using IndexedDB. Nothing is uploaded to external servers.
             </p>
-            <div className="flex gap-4">
-              <Button onClick={() => router.push("/")}>
-                Back to App
-              </Button>
-              <Button variant="outline" onClick={() => window.open("https://github.com/muhammad-zainal-muttaqin/epubnovelreader", "_blank")}>
+            <p>
+              <strong className="text-slate-900 dark:text-slate-200">Browser-Based:</strong> Your data remains on your device and is only accessible to you. We cannot access your files or reading history.
+            </p>
+          </PrivacySection>
+
+          <PrivacySection 
+            icon={<Eye className="h-5 w-5 text-emerald-500" />}
+            title="Data Collection"
+          >
+            <p>
+              <strong className="text-slate-900 dark:text-slate-200">Zero Data Collection:</strong> We do not collect, store, or transmit any personal information or reading data. No tracking pixels, no analytics, no cookies.
+            </p>
+          </PrivacySection>
+
+          <PrivacySection 
+            icon={<Lock className="h-5 w-5 text-amber-500" />}
+            title="Security"
+          >
+             <p>
+                <strong className="text-slate-900 dark:text-slate-200">Client-Side Processing:</strong> All EPUB parsing and processing happens in your browser.
+              </p>
+              <p>
+                <strong className="text-slate-900 dark:text-slate-200">No External API Calls:</strong> The app doesn't make any hidden external API calls.
+              </p>
+          </PrivacySection>
+
+          <PrivacySection 
+            icon={<Globe className="h-5 w-5 text-purple-500" />}
+            title="Transparency"
+          >
+            <p>
+              The entire codebase is open source. You can verify our privacy claims by inspecting the code yourself.
+            </p>
+            <div className="pt-2">
+               <Button variant="outline" size="sm" onClick={() => window.open("https://github.com/muhammad-zainal-muttaqin/epubnovelgithub", "_blank")}>
                 View Source Code
               </Button>
             </div>
-          </section>
+          </PrivacySection>
+        </div>
+
+        <div className="mt-12 text-center animate-in fade-in duration-1000 delay-300">
+          <Button variant="ghost" onClick={() => router.push("/")} className="text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
+          </Button>
         </div>
       </main>
+
+      <footer className="py-6 text-center text-sm text-muted-foreground border-t border-slate-200/50 dark:border-white/5 bg-white/50 backdrop-blur dark:bg-[#0a0f18]/50">
+        <div className="container mx-auto px-4">
+          <p>© {new Date().getFullYear()} EPUB Novel Reader. Built for speed and privacy.</p>
+        </div>
+      </footer>
+    </div>
+  )
+}
+
+function PrivacySection({ icon, title, children }: { icon: React.ReactNode, title: string, children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-slate-200/50 bg-white/50 p-6 shadow-sm backdrop-blur-sm transition-all hover:bg-white/80 hover:shadow-md dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:border-white/10">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5">
+          {icon}
+        </div>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+      </div>
+      <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+        {children}
+      </div>
     </div>
   )
 }
