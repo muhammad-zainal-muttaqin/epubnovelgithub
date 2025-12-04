@@ -39,36 +39,25 @@ interface TOCItem {
 async function parseNavXhtml(zip: JSZip, navHref: string, basePath: string): Promise<TOCItem[]> {
   const navPath = resolvePath(basePath, navHref)
   const navFile = zip.file(navPath)
-  
-  if (!navFile) {
-    return []
-  }
+
+  if (!navFile) return []
 
   const navContent = await navFile.async("text")
   const parser = new DOMParser()
   const navDoc = parser.parseFromString(navContent, "text/html")
-  
   const tocNav = navDoc.querySelector('nav[*|type="toc"], nav#toc')
-  if (!tocNav) {
-    return []
-  }
+
+  if (!tocNav) return []
 
   const items: TOCItem[] = []
   const navItems = tocNav.querySelectorAll("ol > li, ul > li")
-  
+
   navItems.forEach((li) => {
     const link = li.querySelector("a")
-    if (link) {
-      const href = link.getAttribute("href") || ""
-      const label = link.textContent?.trim() || ""
-      
-      if (href && label) {
-        items.push({
-          label,
-          href: normalizePath(resolvePath(navPath, href)),
-        })
-      }
-    }
+    if (!link) return
+    const href = link.getAttribute("href") || ""
+    const label = link.textContent?.trim() || ""
+    if (href && label) items.push({ label, href: normalizePath(resolvePath(navPath, href)) })
   })
 
   return items
@@ -77,33 +66,22 @@ async function parseNavXhtml(zip: JSZip, navHref: string, basePath: string): Pro
 async function parseTocNcx(zip: JSZip, ncxHref: string, basePath: string): Promise<TOCItem[]> {
   const ncxPath = resolvePath(basePath, ncxHref)
   const ncxFile = zip.file(ncxPath)
-  
-  if (!ncxFile) {
-    return []
-  }
+
+  if (!ncxFile) return []
 
   const ncxContent = await ncxFile.async("text")
   const parser = new DOMParser()
   const ncxDoc = parser.parseFromString(ncxContent, "text/xml")
-  
   const items: TOCItem[] = []
   const navPoints = ncxDoc.querySelectorAll("navPoint")
-  
+
   navPoints.forEach((navPoint) => {
     const navLabel = navPoint.querySelector("navLabel text")
     const content = navPoint.querySelector("content")
-    
-    if (navLabel && content) {
-      const label = navLabel.textContent?.trim() || ""
-      const href = content.getAttribute("src") || ""
-      
-      if (href && label) {
-        items.push({
-          label,
-          href: normalizePath(resolvePath(ncxPath, href)),
-        })
-      }
-    }
+    if (!navLabel || !content) return
+    const label = navLabel.textContent?.trim() || ""
+    const href = content.getAttribute("src") || ""
+    if (href && label) items.push({ label, href: normalizePath(resolvePath(ncxPath, href)) })
   })
 
   return items
@@ -111,27 +89,17 @@ async function parseTocNcx(zip: JSZip, ncxHref: string, basePath: string): Promi
 
 async function parseTOC(zip: JSZip, opfDoc: Document, basePath: string): Promise<TOCItem[]> {
   const navItem = opfDoc.querySelector('item[properties*="nav"]')
-  if (navItem) {
-    const navHref = navItem.getAttribute("href")
-    if (navHref) {
-      const items = await parseNavXhtml(zip, navHref, basePath)
-      if (items.length > 0) {
-        return items
-      }
-    }
+  if (navItem?.getAttribute("href")) {
+    const items = await parseNavXhtml(zip, navItem.getAttribute("href")!, basePath)
+    if (items.length > 0) return items
   }
-  
+
   const tocItem = opfDoc.querySelector('item[media-type="application/x-dtbncx+xml"]')
-  if (tocItem) {
-    const tocHref = tocItem.getAttribute("href")
-    if (tocHref) {
-      const items = await parseTocNcx(zip, tocHref, basePath)
-      if (items.length > 0) {
-        return items
-      }
-    }
+  if (tocItem?.getAttribute("href")) {
+    const items = await parseTocNcx(zip, tocItem.getAttribute("href")!, basePath)
+    if (items.length > 0) return items
   }
-  
+
   return []
 }
 
@@ -142,17 +110,7 @@ function rewriteInternalLinks(
   currentChapterHref: string
 ): string {
   return html.replace(/<a([^>]*)href="([^"]*)"([^>]*)>/gi, (match, before, href, after) => {
-    if (href.startsWith("http://") || href.startsWith("https://") || href.startsWith("//")) {
-      return match
-    }
-
-    if (href.includes(":") && !href.startsWith("#")) {
-      return match
-    }
-
-    if (href.startsWith("#")) {
-      return match
-    }
+    if (href.startsWith("http://") || href.startsWith("https://") || href.startsWith("//") || href.startsWith("#") || (href.includes(":") && !href.startsWith("#"))) return match
 
     try {
       const currentDir = currentChapterHref.split("/").slice(0, -1).join("/")
@@ -160,7 +118,7 @@ function rewriteInternalLinks(
       const normalizedHref = normalizePath(resolvedHref)
       const [baseHref, anchor] = normalizedHref.split("#")
       const chapterIndex = hrefToIndexMap.get(baseHref)
-      
+
       if (chapterIndex !== undefined) {
         const newHref = `/reader?bookId=${bookId}&chapterId=${chapterIndex}${anchor ? "#" + anchor : ""}`
         return `<a${before}href="${newHref}"${after}>`
@@ -183,33 +141,21 @@ async function extractImages(zip: JSZip, opfContent: string, basePath: string): 
     if (!hrefMatch) continue
 
     const href = hrefMatch[1]
-    const fullPath = resolvePath(basePath, href)
-    const normalizedPath = normalizePath(fullPath)
+    const normalizedPath = normalizePath(resolvePath(basePath, href))
 
     try {
       const imageFile = zip.file(normalizedPath)
-      if (!imageFile) {
-        continue
-      }
+      if (!imageFile) continue
 
       const imageData = await imageFile.async("arraybuffer")
       const base64 = arrayBufferToBase64(imageData)
-
       const ext = normalizedPath.split(".").pop()?.toLowerCase()
-      const mimeType =
-        ext === "jpg" || ext === "jpeg"
-          ? "image/jpeg"
-          : ext === "png"
-            ? "image/png"
-            : ext === "gif"
-              ? "image/gif"
-              : ext === "svg"
-                ? "image/svg+xml"
-                : "image/jpeg"
-
+      const mimeTypeMap: { [key: string]: string } = {
+        jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif", svg: "image/svg+xml"
+      }
+      const mimeType = mimeTypeMap[ext || ""] || "image/jpeg"
       const dataUrl = `data:${mimeType};base64,${base64}`
-      const storeKey = normalizePath(href)
-      imageMap.set(storeKey, dataUrl)
+      imageMap.set(normalizePath(href), dataUrl)
     } catch (error) {
       console.error("Error extracting image:", normalizedPath, error)
     }
@@ -222,13 +168,7 @@ function replaceImagePaths(html: string, imageMap: Map<string, string>, chapterH
   const chapterDir = chapterHref.split("/").slice(0, -1).join("/")
 
   return html.replace(/<img[^>]*src="([^"]*)"[^>]*>/g, (match, src) => {
-    let resolvedPath = src
-
-    if (src.startsWith("../") || src.startsWith("./") || !src.startsWith("http")) {
-      resolvedPath = resolvePath(chapterDir + "/", src)
-      resolvedPath = normalizePath(resolvedPath)
-    }
-
+    let resolvedPath = src.startsWith("http") ? src : normalizePath(resolvePath(chapterDir + "/", src))
     let dataUrl = imageMap.get(resolvedPath)
 
     if (!dataUrl) {
@@ -241,11 +181,7 @@ function replaceImagePaths(html: string, imageMap: Map<string, string>, chapterH
       }
     }
 
-    if (dataUrl) {
-      return match.replace(src, dataUrl)
-    }
-
-    return match
+    return dataUrl ? match.replace(src, dataUrl) : match
   })
 }
 
@@ -286,17 +222,13 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
   let cover: string | undefined
 
   const coverMeta = opfDoc.querySelector('meta[name="cover"]')
-  if (coverMeta) {
-    const coverId = coverMeta.getAttribute("content")
-    if (coverId) {
-      const coverItem = opfDoc.querySelector(`item[id="${coverId}"]`)
-      if (coverItem) {
-        const coverHref = coverItem.getAttribute("href")
-        if (coverHref) {
-          const coverPath = normalizePath(resolvePath(basePath, coverHref))
-          cover = imageMap.get(normalizePath(coverHref)) || imageMap.get(coverPath)
-        }
-      }
+  const coverId = coverMeta?.getAttribute("content")
+  if (coverId) {
+    const coverItem = opfDoc.querySelector(`item[id="${coverId}"]`)
+    const coverHref = coverItem?.getAttribute("href")
+    if (coverHref) {
+      const coverPath = normalizePath(resolvePath(basePath, coverHref))
+      cover = imageMap.get(normalizePath(coverHref)) || imageMap.get(coverPath)
     }
   }
 
@@ -309,9 +241,7 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
     }
   }
 
-  if (!cover && imageMap.size > 0) {
-    cover = Array.from(imageMap.values())[0]
-  }
+  if (!cover && imageMap.size > 0) cover = Array.from(imageMap.values())[0]
 
   const spine = opfDoc.querySelector("spine")
   const spineItems = Array.from(spine?.querySelectorAll("itemref") || [])
@@ -319,174 +249,126 @@ export async function parseEPUB(file: File, folderId?: string | null): Promise<{
   const chapters: Chapter[] = []
   const bookId = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`
 
-  for (let i = 0; i < spineItems.length; i++) {
-    const itemref = spineItems[i]
+  spineItems.forEach((itemref, i) => {
     const idref = itemref.getAttribute("idref")
-    if (!idref) continue
+    if (!idref) return
 
     const item = opfDoc.querySelector(`item[id="${idref}"]`)
-    if (!item) continue
+    if (!item) return
 
     const href = item.getAttribute("href")
-    if (!href) continue
+    if (!href) return
 
-    const fullPath = resolvePath(basePath, href)
+    zip.file(resolvePath(basePath, href))?.async("text").then(async (chapterContent) => {
+      try {
+        chapterContent = replaceImagePaths(chapterContent, imageMap, href)
+        const sanitized = sanitizeHtml(chapterContent)
+        const chapterDoc = parser.parseFromString(chapterContent, "text/html")
 
-    try {
-      const chapterFile = zip.file(fullPath)
-      if (!chapterFile) {
-        continue
-      }
+        let chapterTitle = chapterDoc.querySelector("h1, h2, h3")?.textContent?.trim() || ""
 
-      let chapterContent = await chapterFile.async("text")
-      chapterContent = replaceImagePaths(chapterContent, imageMap, href)
-      const sanitized = sanitizeHtml(chapterContent)
-
-      const chapterDoc = parser.parseFromString(chapterContent, "text/html")
-      let chapterTitle = ""
-      
-      const heading = chapterDoc.querySelector("h1, h2, h3")
-      if (heading?.textContent && heading.textContent.trim()) {
-        chapterTitle = heading.textContent.trim()
-      }
-      
-      if (!chapterTitle || chapterTitle === title || chapterTitle.length > 100) {
-        const filename = href.split("/").pop()?.replace(/\.(xhtml|html|xml)$/i, "") || ""
-        
-        if (filename) {
+        if (!chapterTitle || chapterTitle === title || chapterTitle.length > 100) {
+          const filename = href.split("/").pop()?.replace(/\.(xhtml|html|xml)$/i, "") || ""
           const lowerFilename = filename.toLowerCase()
-          
-          if (lowerFilename.includes("cover")) {
-            chapterTitle = "Cover"
-          } else if (lowerFilename.includes("copyright")) {
-            chapterTitle = "Copyright"
-          } else if (lowerFilename.includes("toc") || lowerFilename === "contents") {
-            chapterTitle = "Contents"
-          } else if (lowerFilename.includes("titlepage") || lowerFilename === "title") {
-            chapterTitle = "Title Page"
-          } else if (lowerFilename.includes("dedication")) {
-            chapterTitle = "Dedication"
-          } else if (lowerFilename.includes("preface") || lowerFilename.includes("foreword")) {
-            chapterTitle = "Preface"
-          } else if (lowerFilename.includes("prologue")) {
-            chapterTitle = "Prologue"
-          } else if (lowerFilename.includes("epilogue")) {
-            chapterTitle = "Epilogue"
-          } else if (lowerFilename.includes("afterword")) {
-            chapterTitle = "Afterword"
-          } else if (lowerFilename.includes("insert") || lowerFilename.includes("illustration")) {
-            const insertMatch = filename.match(/(\d+)/)
-            if (insertMatch) {
-              chapterTitle = `Insert ${insertMatch[1]}`
+
+          const titleMap: { [key: string]: (n: string) => string } = {
+            cover: () => "Cover",
+            copyright: () => "Copyright",
+            toc: () => "Contents", contents: () => "Contents",
+            titlepage: () => "Title Page", title: () => "Title Page",
+            dedication: () => "Dedication",
+            preface: () => "Preface", foreword: () => "Preface",
+            prologue: () => "Prologue",
+            epilogue: () => "Epilogue",
+            afterword: () => "Afterword"
+          }
+
+          for (const [key, fn] of Object.entries(titleMap)) {
+            if (lowerFilename.includes(key)) {
+              chapterTitle = fn(filename)
+              break
+            }
+          }
+
+          if (!chapterTitle) {
+            if (lowerFilename.match(/^(ch|chap|chapter)[\s_-]*\d+/)) {
+              const numMatch = filename.match(/\d+/)
+              chapterTitle = numMatch ? `Chapter ${numMatch[0]}` : filename.replace(/[\s_-]+/g, " ").replace(/\b\w/g, l => l.toUpperCase())
+            } else if (lowerFilename.match(/^(insert|illustration)[\s_-]*/)) {
+              const numMatch = filename.match(/\d+/)
+              chapterTitle = numMatch ? `Insert ${numMatch[1]}` : "Insert"
             } else {
-              chapterTitle = "Insert"
+              chapterTitle = filename.replace(/[\s_-]+/g, " ").replace(/\b\w/g, l => l.toUpperCase())
             }
-          } else if (lowerFilename.match(/^(ch|chap|chapter)[\s_-]*\d+/)) {
-            const numMatch = filename.match(/\d+/)
-            if (numMatch) {
-              const chapterNum = parseInt(numMatch[0], 10)
-              chapterTitle = `Chapter ${chapterNum}`
-            } else {
-              chapterTitle = filename.replace(/[\s_-]+/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
-            }
-          } else if (lowerFilename.match(/^apter[\s_-]*\d+/)) {
-            const numMatch = filename.match(/\d+/)
-            if (numMatch) {
-              const chapterNum = parseInt(numMatch[0], 10)
-              chapterTitle = `Chapter ${chapterNum}`
-            }
-          } else {
-            chapterTitle = filename.replace(/[\s_-]+/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
           }
         }
-      }
-      
-      if (!chapterTitle) {
-        chapterTitle = `Chapter ${i + 1}`
-      }
 
-      chapters.push({
-        id: `${bookId}-chapter-${i}`,
-        bookId,
-        index: i,
-        title: chapterTitle.trim(),
-        content: sanitized,
-        href: normalizePath(href),
-      })
-    } catch (error) {
-      console.error("Error processing chapter", i, ":", error)
-    }
-  }
+        chapters.push({
+          id: `${bookId}-chapter-${i}`,
+          bookId,
+          index: i,
+          title: chapterTitle || `Chapter ${i + 1}`,
+          content: sanitized,
+          href: normalizePath(href),
+        })
+      } catch (error) {
+        console.error("Error processing chapter", i, ":", error)
+      }
+    }).catch(error => console.error("Error processing chapter", i, ":", error))
+  })
 
   const hrefToIndexMap = new Map<string, number>()
   chapters.forEach((chapter, index) => {
     const baseHref = normalizePath(chapter.href.split("#")[0])
     hrefToIndexMap.set(baseHref, index)
-
     try {
-      const absoluteHref = normalizePath(resolvePath(basePath, baseHref))
-      hrefToIndexMap.set(absoluteHref, index)
+      hrefToIndexMap.set(normalizePath(resolvePath(basePath, baseHref)), index)
     } catch {}
-
     hrefToIndexMap.set(chapter.href, index)
   })
 
   const tocChapters: import("@/lib/types").TOCChapter[] = []
-  if (tocItems.length > 0) {
-    tocItems.forEach((tocItem, i) => {
-      const baseHref = normalizePath(tocItem.href.split("#")[0])
-      const startIndex = hrefToIndexMap.get(baseHref)
-      
-      if (startIndex !== undefined) {
-        let endIndex = chapters.length - 1
-        if (i < tocItems.length - 1) {
-          const nextHref = normalizePath(tocItems[i + 1].href.split("#")[0])
-          const nextStartIndex = hrefToIndexMap.get(nextHref)
-          if (nextStartIndex !== undefined && nextStartIndex > startIndex) {
-            endIndex = nextStartIndex - 1
-          }
-        }
-        
-        const tocChapterId = `toc-chapter-${i}`
-        tocChapters.push({
-          id: tocChapterId,
-          title: tocItem.label,
-          startIndex,
-          endIndex,
-          href: tocItem.href
-        })
-        
-        for (let idx = startIndex; idx <= endIndex; idx++) {
-          if (chapters[idx]) {
-            chapters[idx].tocChapterId = tocChapterId
-          }
-        }
-      }
-    })
-  }
+  tocItems.forEach((tocItem, i) => {
+    const baseHref = normalizePath(tocItem.href.split("#")[0])
+    const startIndex = hrefToIndexMap.get(baseHref)
+
+    if (startIndex === undefined) return
+
+    let endIndex = chapters.length - 1
+    if (i < tocItems.length - 1) {
+      const nextHref = normalizePath(tocItems[i + 1].href.split("#")[0])
+      const nextStartIndex = hrefToIndexMap.get(nextHref)
+      if (nextStartIndex !== undefined && nextStartIndex > startIndex) endIndex = nextStartIndex - 1
+    }
+
+    const tocChapterId = `toc-chapter-${i}`
+    tocChapters.push({ id: tocChapterId, title: tocItem.label, startIndex, endIndex, href: tocItem.href })
+
+    for (let idx = startIndex; idx <= endIndex; idx++) {
+      if (chapters[idx]) chapters[idx].tocChapterId = tocChapterId
+    }
+  })
 
   for (const chapter of chapters) {
     chapter.content = rewriteInternalLinks(chapter.content, hrefToIndexMap, bookId, chapter.href)
   }
 
-  const actualChapterCount = tocChapters.length > 0
-    ? tocChapters.filter(toc => 
-        toc.title.toLowerCase().includes("chapter") || 
-        toc.title.match(/^(ch|chap)\s*\d+/i) ||
-        toc.title.match(/^\d+[.:]/i)
-      ).length
-    : chapters.filter(ch => 
-        ch.title.toLowerCase().includes("chapter") ||
-        ch.title.match(/^(ch|chap)\s*\d+/i) ||
-        ch.title.match(/^\d+[.:]/i)
-      ).length
+  const isChapterLike = (title: string) => 
+    title.toLowerCase().includes("chapter") || 
+    title.match(/^(ch|chap)\s*\d+/i) ||
+    title.match(/^\d+[.:]/i)
+
+  const actualChapterCount = (tocChapters.length > 0 
+    ? tocChapters.filter(toc => isChapterLike(toc.title)).length
+    : chapters.filter(ch => isChapterLike(ch.title)).length
+  ) || (tocChapters.length > 0 ? tocChapters.length : chapters.length)
 
   const book: Book = {
     id: bookId,
     title,
     author,
     cover,
-    totalChapters: actualChapterCount > 0 ? actualChapterCount : (tocChapters.length > 0 ? tocChapters.length : chapters.length),
+    totalChapters: actualChapterCount,
     currentChapter: 0,
     progress: 0,
     addedAt: Date.now(),

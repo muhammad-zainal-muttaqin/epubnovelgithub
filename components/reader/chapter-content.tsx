@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
+import { cn } from "@/lib/utils"
 
 interface ChapterContentProps {
   content: string
@@ -37,15 +38,9 @@ export function ChapterContent({
       if (!contentRef.current || !onScroll || !readyRef.current) return
 
       const element = contentRef.current
-      const scrollTop = element.scrollTop
       const scrollHeight = element.scrollHeight - element.clientHeight
-
-      if (scrollHeight > 0) {
-        const percentage = Math.min((scrollTop / scrollHeight) * 100, 100)
-        onScroll(percentage)
-      } else {
-        onScroll(100)
-      }
+      const percentage = scrollHeight > 0 ? Math.min((element.scrollTop / scrollHeight) * 100, 100) : 100
+      onScroll(percentage)
     }
 
     const element = contentRef.current
@@ -57,39 +52,28 @@ export function ChapterContent({
 
   useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      const link = target.closest("a")
-      
+      const link = (e.target as HTMLElement).closest("a")
       if (!link) return
-      
+
       const href = link.getAttribute("href")
-      if (!href) return
-      
-      const match = href.match(/\?bookId=([^&]+)&chapterId=(\d+)/)
-      if (match) {
-        e.preventDefault()
-        router.push(href)
-      }
+      if (!href?.match(/\?bookId=([^&]+)&chapterId=(\d+)/)) return
+
+      e.preventDefault()
+      router.push(href)
     }
 
-    const element = contentRef.current
-    if (element) {
-      element.addEventListener("click", handleLinkClick)
-      return () => element.removeEventListener("click", handleLinkClick)
-    }
+    contentRef.current?.addEventListener("click", handleLinkClick)
+    return () => contentRef.current?.removeEventListener("click", handleLinkClick)
   }, [router])
 
   useLayoutEffect(() => {
-    if (!contentRef.current) return
     const el = contentRef.current
-
-    if (initialScrollPercent == null) {
-      readyRef.current = true
+    if (!el || initialScrollPercent == null) {
+      if (el) readyRef.current = true
       return
     }
 
     readyRef.current = false
-
     const clamped = Math.max(0, Math.min(100, initialScrollPercent))
     let attempts = 0
 
@@ -97,21 +81,18 @@ export function ChapterContent({
       const maxScroll = el.scrollHeight - el.clientHeight
       if (maxScroll <= 0) {
         readyRef.current = true
-        if (onScroll) onScroll(100)
+        onScroll?.(100)
         return
       }
 
-      const targetScroll = Math.round((clamped / 100) * maxScroll)
-      el.scrollTop = targetScroll
+      el.scrollTop = Math.round((clamped / 100) * maxScroll)
       attempts += 1
 
-      const reached = Math.abs(el.scrollTop - targetScroll) < 2 || attempts >= 5
-      if (reached) {
+      if (Math.abs(el.scrollTop - Math.round((clamped / 100) * maxScroll)) < 2 || attempts >= 5) {
         readyRef.current = true
         if (onScroll) {
           const scrollHeight = el.scrollHeight - el.clientHeight
-          const percentage = scrollHeight > 0 ? Math.min((el.scrollTop / scrollHeight) * 100, 100) : 100
-          onScroll(percentage)
+          onScroll(scrollHeight > 0 ? Math.min((el.scrollTop / scrollHeight) * 100, 100) : 100)
         }
         return
       }
@@ -119,60 +100,37 @@ export function ChapterContent({
       requestAnimationFrame(applyScroll)
     }
 
-    const raf1 = requestAnimationFrame(applyScroll)
-    return () => cancelAnimationFrame(raf1)
+    return () => cancelAnimationFrame(requestAnimationFrame(applyScroll))
   }, [content, initialScrollPercent, onScroll])
 
-  const fontFamilyClass = {
-    sans: "font-sans",
-    serif: "font-serif",
-    mono: "font-mono",
+  const fontFamilyMap = {
+    sans: "font-sans", serif: "font-serif", mono: "font-mono",
     merriweather: "font-[family-name:var(--font-merriweather)]",
     "open-sans": "font-[family-name:var(--font-open-sans)]",
     literata: "font-[family-name:var(--font-literata)]",
     garamond: "font-[family-name:var(--font-garamond)]",
     opendyslexic: "font-['OpenDyslexic']",
-  }[fontFamily]
-
-  const textAlignClass = {
-    left: "text-left",
-    center: "text-center",
-    right: "text-right",
-    justify: "text-justify",
-  }[textAlign]
+  }
+  const textAlignMap = { left: "text-left", center: "text-center", right: "text-right", justify: "text-justify" }
 
   return (
-    <div 
-      ref={contentRef} 
-      className="h-full overflow-y-auto scrollbar-hide chapter-scroll" 
-      data-chapter-content
-    >
+    <div ref={contentRef} className="h-full overflow-y-auto scrollbar-hide chapter-scroll" data-chapter-content>
       <article
         className={cn(
           "prose prose-neutral dark:prose-invert mx-auto px-4 pt-24 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom))]",
           "break-words overflow-wrap-anywhere",
-          "[&_*:not(.bg-muted)]:!bg-transparent",
-          "[&_*]:!font-[inherit]",
+          "[&_*:not(.bg-muted)]:!bg-transparent [&_*]:!font-[inherit]",
           "[&_*]:!text-[length:inherit] [&_*]:!leading-[inherit]",
           "[&_p]:!mb-4 [&_p]:!mt-0 [&_p]:!leading-relaxed [&_p]:break-words",
           "[&_div]:!mb-4 [&_div]:!mt-0 [&_div]:break-words",
           "[&_span]:!bg-transparent [&_span]:break-words",
           "[&_pre]:!whitespace-pre-wrap [&_pre]:!break-words",
-          fontFamilyClass, 
-          textAlignClass
+          fontFamilyMap[fontFamily], textAlignMap[textAlign]
         )}
-        style={{
-          fontSize: `${fontSize}px`,
-          lineHeight: lineHeight,
-          maxWidth: `${maxWidth}px`,
-        }}
+        style={{ fontSize: `${fontSize}px`, lineHeight, maxWidth: `${maxWidth}px` }}
       >
         <div dangerouslySetInnerHTML={{ __html: content }} />
       </article>
     </div>
   )
-}
-
-function cn(...classes: (string | undefined | false)[]) {
-  return classes.filter(Boolean).join(" ")
 }
