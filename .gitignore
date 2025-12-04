@@ -35,3 +35,62 @@ next-env.d.ts
 !example/
 example/*
 !example/*.epub
+
+# Existing .gitignore content (assuming standard ignores; append these if not present)
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Bun
+bun.lockb
+
+# Production builds
+out/
+dist/
+.next/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bunfig.toml  # Optional: if you have Bun config
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# IDE/Editor
+.vscode/settings.json
+.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Project-specific (EPUB reader)
+example/*.epub  # Ignore example EPUB files to avoid committing binaries
+public/placeholder*.jpg  # Optional: ignore generated images if not needed
