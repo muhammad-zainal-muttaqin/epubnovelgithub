@@ -6,6 +6,7 @@ import { Merriweather, Open_Sans, Literata, EB_Garamond } from "next/font/google
 import "./globals.css"
 import { Suspense } from "react"
 import { ThemeProvider } from "@/components/theme-provider"
+import { DemoLoaderClient } from "@/components/demo-loader-client"
 
 const merriweather = Merriweather({
   weight: ["400", "700"],
@@ -47,6 +48,7 @@ export default function RootLayout({
       </head>
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} ${merriweather.variable} ${openSans.variable} ${literata.variable} ${garamond.variable}`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          <DemoLoaderClient />
           <Suspense fallback={null}>{children}</Suspense>
         </ThemeProvider>
       </body>

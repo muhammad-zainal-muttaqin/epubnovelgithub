@@ -6,7 +6,14 @@ A modern, privacy-first web application for reading EPUB novels with a clean int
 
 ## ✨ Features
 
-### 🤖 AI Translation (New!)
+### 🎁 Demo EPUB (New!)
+- **Instant Demo**: Automatic EPUB demo book loads on first visit
+- **No Upload Required**: Users can immediately explore full reading experience
+- **One-Time Load**: Demo loads once and persists in local storage
+- **Smart Parsing**: Full chapter parsing with images and metadata extraction
+- **Complete Experience**: Users can test all features without uploading their own EPUB
+
+### 🤖 AI Translation
 - **Context-Aware Translation**: Translates novels to your preferred language using Google Gemini AI.
 - **Genre-Smart**: Automatically detects genre (Light Novel, Wuxia, Western) to adapt tone and terminology.
 - **BYOK (Bring Your Own Key)**: Securely use your own Google Gemini API Key.
@@ -74,10 +81,11 @@ A modern, privacy-first web application for reading EPUB novels with a clean int
 ## 📖 Usage Guide
 
 ### Getting Started
-1. **Upload Books**: Click the upload button to add EPUB files to your library
-2. **Browse Library**: View all your uploaded books with progress indicators
-3. **Start Reading**: Click "Read" or "Continue" to open a book
-4. **Customize Settings**: Adjust fonts, themes, and layout preferences
+1. **Try Demo Book**: A demo novel automatically loads on your first visit - explore all features without uploading!
+2. **Upload Books**: Click the upload button to add your own EPUB files to your library
+3. **Browse Library**: View all your books (including demo) with progress indicators
+4. **Start Reading**: Click "Read" or "Continue" to open a book
+5. **Customize Settings**: Adjust fonts, themes, and layout preferences
 
 ### AI Translation Guide (Client-Side)
 1. Get a **free Google Gemini API Key**:
@@ -125,8 +133,14 @@ A modern, privacy-first web application for reading EPUB novels with a clean int
 - **Hosting**: GitHub Pages (Static HTML/CSS/JS)
 - **CI/CD**: GitHub Actions for automatic deployment
 
-## 🎯 Recent Updates (GitHub Pages Edition)
+## 🎯 Recent Updates
 
+### Version 2.1.0 - Demo EPUB Feature
+- **✨ Auto-Loading Demo**: EPUB demo book automatically loads on first visit
+- **📚 One-Time Parsing**: Efficient localStorage-based demo persistence
+- **🎯 Full Experience**: Users can immediately explore all features without uploading
+
+### Previous Updates
 - **✨ GitHub Pages Deployment**: 100% static hosting with automatic CI/CD
 - **🔒 Client-Side Translation**: All translation happens in browser via Google Gemini SDK
 - **⚡ Zero Server Dependencies**: No backend API needed - pure static files
