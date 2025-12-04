@@ -7,6 +7,7 @@ import { getFolder } from '@/lib/db/folders'
 import { useEffect, useState, useRef } from 'react'
 import { TranslateMenu } from "./translate-menu"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 interface ReaderHeaderProps {
   bookTitle: string
@@ -25,7 +26,7 @@ export function ReaderHeader({
   chapterTitle, 
   progress, 
   onSettingsClick, 
-  bookFolderId,
+  bookFolderId, 
   apiKey,
   isTranslating,
   currentLanguage,
@@ -33,26 +34,11 @@ export function ReaderHeader({
 }: ReaderHeaderProps) {
   const router = useRouter()
   const [folderSlug, setFolderSlug] = useState<string | null>(null)
-  const [isVisible, setIsVisible] = useState(true)
-  const lastScrollY = useRef(0)
+  const [isScrolled, setIsScrolled] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
-      const currentScrollY = window.scrollY
-      
-      if (currentScrollY < 0) return
-
-      if (currentScrollY < 10) {
-        setIsVisible(true)
-      } else {
-        if (currentScrollY < lastScrollY.current) {
-          setIsVisible(true)
-        } else if (currentScrollY > lastScrollY.current) {
-          setIsVisible(false)
-        }
-      }
-      
-      lastScrollY.current = currentScrollY
+      setIsScrolled(window.scrollY > 10)
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -80,53 +66,67 @@ export function ReaderHeader({
   }
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-40 border-b bg-[#f9f7f1]/95 backdrop-blur supports-[backdrop-filter]:bg-[#f9f7f1]/60 dark:bg-background/95 dark:supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-      <div className="container mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <div className="flex items-center gap-3 min-w-0">
-          <Button variant="ghost" size="icon" onClick={handleBackClick} className="h-9 w-9 shrink-0">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="hidden sm:block min-w-0 overflow-hidden">
-            <h1 className="text-sm font-semibold leading-tight truncate">{bookTitle}</h1>
-            <div className="flex items-center gap-2">
-              <p className="text-xs text-muted-foreground truncate max-w-[200px]">{chapterTitle}</p>
-              
-              {isTranslating && (
-                <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal animate-pulse gap-1 bg-primary/10 text-primary border-primary/20">
-                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                  Translating...
-                </Badge>
-              )}
-              
-              {!isTranslating && currentLanguage && (
-                <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal gap-1 bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
-                  <Globe className="h-2.5 w-2.5" />
-                  {currentLanguage}
-                </Badge>
-              )}
+    <header 
+      className={cn(
+        "fixed top-0 z-40 w-full flex justify-center transition-all duration-300 ease-in-out",
+        isScrolled ? "pt-6" : "pt-0"
+      )}
+    >
+      <div 
+        className={cn(
+          "flex items-center justify-between transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)]",
+          isScrolled 
+            ? "w-[95%] max-w-3xl h-12 rounded-full bg-[#f9f7f1]/98 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] px-2 dark:bg-background/98 dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]"
+            : "w-full h-14 bg-[#f9f7f1]/98 backdrop-blur supports-[backdrop-filter]:bg-[#f9f7f1]/60 px-4 dark:bg-background/98 dark:supports-[backdrop-filter]:bg-background/60 rounded-none"
+        )}
+      >
+        <div className={cn("container mx-auto flex items-center justify-between h-full", !isScrolled && "max-w-5xl")}>
+          <div className="flex items-center gap-3 min-w-0">
+            <Button variant="ghost" size="icon" onClick={handleBackClick} className="h-8 w-8 shrink-0 rounded-full">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className={cn("hidden sm:block min-w-0 overflow-hidden transition-all duration-300 ease-in-out", isScrolled ? "opacity-0 w-0" : "opacity-100")}>
+              <h1 className="text-sm font-semibold leading-tight truncate">{bookTitle}</h1>
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-muted-foreground truncate max-w-[200px]">{chapterTitle}</p>
+                
+                {isTranslating && (
+                  <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal animate-pulse gap-1 bg-primary/10 text-primary border-primary/20">
+                    <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                    Translating...
+                  </Badge>
+                )}
+                
+                {!isTranslating && currentLanguage && (
+                  <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal gap-1 bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
+                    <Globe className="h-2.5 w-2.5" />
+                    {currentLanguage}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-          <span className="hidden text-xs text-muted-foreground sm:inline mr-2">{Math.round(progress)}%</span>
-          
-          <div className="sm:hidden flex items-center mr-1">
-             {isTranslating && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />}
-             {!isTranslating && currentLanguage && <Globe className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <span className={cn("hidden text-xs text-muted-foreground sm:inline mr-2 transition-all duration-300", isScrolled ? "text-[10px]" : "")}>{Math.round(progress)}%</span>
+            
+            <div className="sm:hidden flex items-center mr-1">
+               {isTranslating && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />}
+               {!isTranslating && currentLanguage && <Globe className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />}
+            </div>
+
+            <TranslateMenu
+              apiKey={apiKey}
+              isTranslating={isTranslating}
+              currentLanguage={currentLanguage}
+              onTranslate={onTranslate}
+              onOpenSettings={onSettingsClick}
+            />
+
+            <Button variant="ghost" size="icon" onClick={onSettingsClick} className="h-8 w-8 rounded-full">
+              <Settings className="h-4 w-4" />
+            </Button>
           </div>
-
-          <TranslateMenu
-            apiKey={apiKey}
-            isTranslating={isTranslating}
-            currentLanguage={currentLanguage}
-            onTranslate={onTranslate}
-            onOpenSettings={onSettingsClick}
-          />
-
-          <Button variant="ghost" size="icon" onClick={onSettingsClick} className="h-9 w-9">
-            <Settings className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </header>

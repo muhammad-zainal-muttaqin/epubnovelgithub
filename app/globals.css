@@ -42,6 +42,10 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  
+  /* Reader background for scroll fade effect */
+  --reader-bg: #f9f7f1;
+  --reader-overlay: #ebe8e0;
 
   /* Animation timing functions for Shigure UI theme transitions */
   --expo-in: linear(0 0%, 0.0085 31.26%, 0.0167 40.94%,
@@ -94,6 +98,10 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+  
+  /* Reader background for scroll fade effect */
+  --reader-bg: #0a0f18;
+  --reader-overlay: #0e1422;
 }
 
 /* ==========================================================================

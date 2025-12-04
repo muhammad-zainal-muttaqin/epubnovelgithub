@@ -7,6 +7,8 @@ import { MobileMenu } from "./mobile-menu"
 import { useTheme } from "next-themes"
 import type { SortBy } from "@/lib/db/books"
 import { toggleThemeWithTransition } from "@/lib/theme-transition"
+import { cn } from "@/lib/utils"
+import { useEffect, useState } from "react"
 
 interface LibraryHeaderProps {
   currentFolderName?: string
@@ -35,141 +37,161 @@ export function LibraryHeader({
   onSortChange,
 }: LibraryHeaderProps) {
   const { theme, setTheme } = useTheme()
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10)
+    }
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
   return (
-    <div className="container mx-auto max-w-5xl flex items-center justify-between">
-      <div className="flex md:hidden items-center gap-2 flex-1">
-        <MobileMenu
-          currentFolderName={currentFolderName}
-          bookCount={bookCount}
-          onBackToRoot={onBackToRoot}
-          onHomeClick={onHomeClick}
-          onCreateFolder={onCreateFolder}
-          sortBy={sortBy}
-          onSortChange={onSortChange}
-        />
-        <div className="flex items-baseline gap-2">
-          {currentFolderName ? (
-            <div className="flex items-center gap-2 text-lg text-muted-foreground">
-              <button 
-                onClick={onBackToRoot}
-                className="text-primary hover:text-primary/80 transition-colors cursor-pointer hover:underline"
-                title="Back to Library Root"
-              >
-                Library
-              </button>
-              <ChevronRight className="h-4 w-4" />
-              <span className="text-lg font-semibold text-foreground">{currentFolderName}</span>
-            </div>
-          ) : (
-            <h1 className="text-lg font-semibold">Library</h1>
-          )}
-          <span className="text-xs text-muted-foreground">
-            {bookCount} {bookCount === 1 ? "item" : "items"}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex md:hidden">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={(e) => toggleThemeWithTransition(e, setTheme, theme)}
-          aria-label="Toggle theme"
-          className="h-9 w-9"
-        >
-          <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-        </Button>
-      </div>
-
-      <div className="hidden md:flex items-center gap-4 flex-1">
-        <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={onHomeClick} 
-          className="h-9 w-9"
-          title="Back to Home"
-        >
-          <Home className="h-4 w-4" />
-        </Button>
-        
-        {currentFolderName && onBackToRoot && (
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={onBackToRoot} 
-            className="h-9 w-9"
-            title="Back to Library Root"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+    <header 
+      className={cn(
+        "fixed top-0 z-40 w-full flex justify-center transition-all duration-300 ease-in-out",
+        isScrolled ? "pt-6" : "pt-0"
+      )}
+    >
+      <div 
+        className={cn(
+          "flex items-center justify-between transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)]",
+          isScrolled 
+            ? "w-[95%] max-w-4xl h-14 rounded-full border border-slate-200/60 bg-white/95 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] px-2.5 dark:border-white/10 dark:bg-[#0a0f18]/95 dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]"
+            : "w-full h-16 border-b border-slate-200/50 bg-white/95 backdrop-blur-md px-4 dark:border-white/5 dark:bg-[#0a0f18]/95 rounded-none"
         )}
-        
-        <div className="flex items-baseline gap-2">
-          {currentFolderName ? (
-            <div className="flex items-center gap-2 text-xl text-muted-foreground">
-              <button 
-                onClick={onBackToRoot}
-                className="text-primary hover:text-primary/80 transition-colors cursor-pointer hover:underline"
-                title="Back to Library Root"
-              >
-                Library
-              </button>
-              <ChevronRight className="h-4 w-4" />
-              <span className="text-xl font-semibold text-foreground">{currentFolderName}</span>
+      >
+        <div className={cn("container mx-auto flex items-center justify-between h-full", !isScrolled && "max-w-5xl")}>
+          <div className="flex md:hidden items-center gap-2 flex-1">
+            <MobileMenu
+              currentFolderName={currentFolderName}
+              bookCount={bookCount}
+              onBackToRoot={onBackToRoot}
+              onHomeClick={onHomeClick}
+              onCreateFolder={onCreateFolder}
+              sortBy={sortBy}
+              onSortChange={onSortChange}
+            />
+            <div className="flex items-baseline gap-2 overflow-hidden">
+              {currentFolderName ? (
+                <div className="flex items-center gap-1 text-base text-muted-foreground overflow-hidden">
+                  <span className="truncate font-semibold text-foreground">{currentFolderName}</span>
+                </div>
+              ) : (
+                <h1 className="text-lg font-semibold truncate">Library</h1>
+              )}
             </div>
-          ) : (
-            <h1 className="text-xl font-semibold">Library</h1>
-          )}
-          <span className="text-sm text-muted-foreground">
-            {bookCount} {bookCount === 1 ? "item" : "items"}
-          </span>
-        </div>
-      </div>
+          </div>
 
-      <div className="hidden md:flex items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
-              <ArrowUpDown className="h-4 w-4" />
-              <span className="hidden sm:inline">{sortLabels[sortBy]}</span>
+          <div className="flex md:hidden">
+            {mounted && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => toggleThemeWithTransition(e, setTheme, theme)}
+                aria-label="Toggle theme"
+                className={cn("text-muted-foreground transition-all duration-300 rounded-full", isScrolled ? "h-9 w-9" : "h-9 w-9")}
+              >
+                <Sun className={cn("rotate-0 scale-100 transition-all duration-300 dark:-rotate-90 dark:scale-0", isScrolled ? "h-4 w-4" : "h-4 w-4")} />
+                <Moon className={cn("absolute rotate-90 scale-0 transition-all duration-300 dark:rotate-0 dark:scale-100", isScrolled ? "h-4 w-4" : "h-4 w-4")} />
+              </Button>
+            )}
+          </div>
+
+          <div className="hidden md:flex items-center gap-4 flex-1">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onHomeClick} 
+              className="h-9 w-9 rounded-full"
+              title="Back to Home"
+            >
+              <Home className="h-4 w-4" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onSortChange("name")}>
-              {sortLabels.name}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onSortChange("addedAt")}>
-              {sortLabels.addedAt}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onSortChange("lastReadAt")}>
-              {sortLabels.lastReadAt}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onSortChange("progress")}>
-              {sortLabels.progress}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            
+            {currentFolderName && onBackToRoot && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={onBackToRoot} 
+                className="h-9 w-9 rounded-full"
+                title="Back to Library Root"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
+            
+            <div className="flex items-baseline gap-2">
+              {currentFolderName ? (
+                <div className="flex items-center gap-2 text-lg text-muted-foreground">
+                  <button 
+                    onClick={onBackToRoot}
+                    className="hover:text-foreground transition-colors cursor-pointer"
+                    title="Back to Library Root"
+                  >
+                    Library
+                  </button>
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="font-semibold text-foreground">{currentFolderName}</span>
+                </div>
+              ) : (
+                <h1 className="text-lg font-semibold">Library</h1>
+              )}
+              <span className="text-xs text-muted-foreground">
+                {bookCount} {bookCount === 1 ? "item" : "items"}
+              </span>
+            </div>
+          </div>
 
-        {!currentFolderName && (
-          <Button variant="outline" size="sm" onClick={onCreateFolder} className="gap-2">
-            <FolderPlus className="h-4 w-4" />
-            <span className="hidden sm:inline">New Folder</span>
-          </Button>
-        )}
+          <div className="hidden md:flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2 rounded-full h-9">
+                  <ArrowUpDown className="h-4 w-4" />
+                  <span className={cn("hidden lg:inline transition-all duration-300", isScrolled ? "hidden" : "inline")}>{sortLabels[sortBy]}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onSortChange("name")}>
+                  {sortLabels.name}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSortChange("addedAt")}>
+                  {sortLabels.addedAt}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSortChange("lastReadAt")}>
+                  {sortLabels.lastReadAt}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSortChange("progress")}>
+                  {sortLabels.progress}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={(e) => toggleThemeWithTransition(e, setTheme, theme)}
-          aria-label="Toggle theme"
-          className="h-9 w-9"
-        >
-          <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-        </Button>
+            {!currentFolderName && (
+              <Button variant="ghost" size="sm" onClick={onCreateFolder} className="gap-2 rounded-full h-9">
+                <FolderPlus className="h-4 w-4" />
+                <span className={cn("hidden lg:inline transition-all duration-300", isScrolled ? "hidden" : "inline")}>New Folder</span>
+              </Button>
+            )}
+
+            {mounted && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => toggleThemeWithTransition(e, setTheme, theme)}
+                aria-label="Toggle theme"
+                className="h-9 w-9 rounded-full"
+              >
+                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all duration-300 dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all duration-300 dark:rotate-0 dark:scale-100" />
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </header>
   )
 }
-

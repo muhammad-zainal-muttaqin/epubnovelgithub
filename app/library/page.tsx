@@ -498,22 +498,20 @@ export default function LibraryPage() {
         <div className="absolute -left-32 top-20 h-72 w-72 rounded-full bg-primary/15 blur-3xl dark:bg-primary/20" />
         <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-emerald-400/10 blur-3xl dark:bg-emerald-500/15" />
       </div>
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b border-slate-200/70 px-3 py-3 sm:px-4 dark:bg-[#0a0f18]/80 dark:border-white/10">
-        <LibraryHeader
-          currentFolderName={currentFolder?.name}
-          bookCount={visibleItemCount}
-          onBackToRoot={currentFolderId ? handleBackToRoot : undefined}
-          onHomeClick={() => router.push("/")}
-          onCreateFolder={() => {
-            setEditingFolder(null)
-            setCreateFolderOpen(true)
-          }}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-        />
-      </header>
+      <LibraryHeader
+        currentFolderName={currentFolder?.name}
+        bookCount={visibleItemCount}
+        onBackToRoot={currentFolderId ? handleBackToRoot : undefined}
+        onHomeClick={() => router.push("/")}
+        onCreateFolder={() => {
+          setEditingFolder(null)
+          setCreateFolderOpen(true)
+        }}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+      />
 
-      <div className="container mx-auto w-full max-w-4xl px-3 pb-16 pt-4 sm:max-w-5xl sm:px-4">
+      <div className="container mx-auto w-full max-w-4xl px-3 pb-16 pt-24 sm:max-w-5xl sm:px-4">
         {isLoading || isFolderLoading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

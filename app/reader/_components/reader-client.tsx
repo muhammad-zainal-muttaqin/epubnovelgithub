@@ -672,6 +672,20 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
       <div className="relative z-10 flex h-full flex-col">
         <ProgressBar progress={overallProgress} />
 
+        {/* Fixed scroll fade overlays - covers only the gap area */}
+        <div 
+          className="pointer-events-none fixed top-0 left-0 right-0 z-30 h-18"
+          style={{
+            background: "linear-gradient(to bottom, var(--reader-overlay, #f0ede5) 0%, var(--reader-overlay, #f0ede5) 30%, transparent 100%)"
+          }}
+        />
+        <div 
+          className="pointer-events-none fixed bottom-0 left-0 right-0 z-30 h-18"
+          style={{
+            background: "linear-gradient(to top, var(--reader-overlay, #f0ede5) 0%, var(--reader-overlay, #f0ede5) 30%, transparent 100%)"
+          }}
+        />
+
         <ReaderHeader
           bookTitle={book.title}
           chapterTitle={displayChapterTitle}

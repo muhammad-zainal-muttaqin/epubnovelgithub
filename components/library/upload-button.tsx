@@ -69,7 +69,7 @@ export function UploadButton({ onUploadComplete, className, children, currentFol
   }
 
   return (
-    <div>
+    <div className={className ? "w-full sm:w-auto" : ""}>
       <input
         type="file"
         accept=".epub"

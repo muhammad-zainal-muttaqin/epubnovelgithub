@@ -142,10 +142,14 @@ export function ChapterContent({
   }[textAlign]
 
   return (
-    <div ref={contentRef} className="h-full overflow-y-auto scrollbar-hide chapter-scroll" data-chapter-content>
+    <div 
+      ref={contentRef} 
+      className="h-full overflow-y-auto scrollbar-hide chapter-scroll" 
+      data-chapter-content
+    >
       <article
         className={cn(
-          "prose prose-neutral dark:prose-invert mx-auto px-4 pt-20 pb-24 pb-[calc(6rem+env(safe-area-inset-bottom))]",
+          "prose prose-neutral dark:prose-invert mx-auto px-4 pt-24 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom))]",
           "break-words overflow-wrap-anywhere",
           "[&_*:not(.bg-muted)]:!bg-transparent",
           "[&_*]:!font-[inherit]",
