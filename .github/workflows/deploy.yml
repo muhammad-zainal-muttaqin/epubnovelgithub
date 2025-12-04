@@ -11,12 +11,8 @@ permissions:
   id-token: write
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,14 +31,14 @@ jobs:
         with:
           path: ./out
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        continue-on-error: true
-
-      - name: Check deployment status
-        if: failure()
-        run: |
-          echo "GitHub Pages may not be enabled. Please enable it in repository settings:"
-          echo "Settings → Pages → Build and deployment → Source: GitHub Actions"
 
