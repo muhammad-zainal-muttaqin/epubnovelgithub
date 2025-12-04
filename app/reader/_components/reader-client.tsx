@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState, useCallback, useRef } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { getBook, updateBook } from "@/lib/db/books"
 import { getChaptersByBook } from "@/lib/db/chapters"
@@ -9,6 +9,7 @@ import { updateProgress } from "@/lib/db/progress"
 import { getTranslation, saveTranslation } from "@/lib/db/translations"
 import { splitHtmlIntoChunks } from "@/lib/html-utils"
 import { toggleThemeWithTransition } from "@/lib/theme-transition"
+import { translateTextClient } from "@/lib/translate"
 import type { Book, Chapter, ReaderSettings, TOCChapter } from "@/lib/types"
 import { DEFAULT_SETTINGS, STORAGE_KEYS } from "@/lib/keys"
 import { ReaderHeader } from "@/components/reader/reader-header"
@@ -29,10 +30,12 @@ type ReaderCacheEntry = {
 
 const readerCache = new Map<string, ReaderCacheEntry>()
 
-export default function ReaderPage() {
-  const params = useParams()
-  const bookId = params.bookId as string
-  const chapterId = params.chapterId as string
+interface ReaderPageContentProps {
+  bookId: string
+  chapterId: string
+}
+
+export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps) {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
 
@@ -173,7 +176,6 @@ export default function ReaderPage() {
   }, [bookId, loadScrollPositions, currentChapterIndex])
 
   useEffect(() => {
-    // Save scroll position when changing chapters or unmounting
     return () => {
       const idx = currentChapterIndexRef.current
       const scroll = scrollProgressRef.current
@@ -264,7 +266,6 @@ export default function ReaderPage() {
 
   useEffect(() => {
     if (!chapters.length) return
-    if (!("prefetch" in router) || typeof router.prefetch !== "function") return
 
     const targets = new Set<number>()
     for (let offset = 1; offset <= 3; offset++) {
@@ -274,11 +275,7 @@ export default function ReaderPage() {
       if (nextIndex < chapters.length) targets.add(nextIndex)
       if (prevIndex >= 0) targets.add(prevIndex)
     }
-
-    targets.forEach((index) => {
-      router.prefetch(`/reader/${bookId}/${index}`)
-    })
-  }, [bookId, chapters.length, currentChapterIndex, router])
+  }, [bookId, chapters.length, currentChapterIndex])
 
   useEffect(() => {
     return () => {
@@ -377,7 +374,7 @@ export default function ReaderPage() {
     if (currentChapterIndex > 0) {
       snapshotCurrentPosition()
       const newIndex = currentChapterIndex - 1
-      router.push(`/reader/${bookId}/${newIndex}`)
+      router.push(`/reader?bookId=${bookId}&chapterId=${newIndex}`)
     }
   }, [currentChapterIndex, bookId, router, snapshotCurrentPosition])
 
@@ -385,14 +382,14 @@ export default function ReaderPage() {
     if (currentChapterIndex < chapters.length - 1) {
       snapshotCurrentPosition()
       const newIndex = currentChapterIndex + 1
-      router.push(`/reader/${bookId}/${newIndex}`)
+      router.push(`/reader?bookId=${bookId}&chapterId=${newIndex}`)
     }
   }, [currentChapterIndex, chapters.length, bookId, router, snapshotCurrentPosition])
 
   const handleChapterSelect = useCallback(
     (index: number) => {
       snapshotCurrentPosition()
-      router.push(`/reader/${bookId}/${index}`)
+      router.push(`/reader?bookId=${bookId}&chapterId=${index}`)
     },
     [bookId, router, snapshotCurrentPosition],
   )
@@ -508,27 +505,13 @@ export default function ReaderPage() {
         const chunk = chunks[i]
         
         try {
-          const response = await fetch("/api/translate", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-google-api-key": settings.apiKey,
-            },
-            body: JSON.stringify({
-              text: chunk,
-              targetLang,
-              bookTitle: book?.title || "",
-              chapterTitle: displayChapterTitle,
-            }),
-          })
-
-          const data = await response.json()
-
-          if (!response.ok) {
-            throw new Error(data.error || "Translation failed")
-          }
-
-          let chunkTranslated = data.translatedText
+          const chunkTranslated = await translateTextClient(
+            chunk,
+            targetLang,
+            settings.apiKey,
+            book?.title || "",
+            displayChapterTitle,
+          )
           
           imgTags.forEach((tag, index) => {
             const placeholderRegex = new RegExp(`__\\s*IMG_PLACEHOLDER_${index}\\s*__`, "gi")
@@ -746,3 +729,4 @@ export default function ReaderPage() {
     </div>
   )
 }
+

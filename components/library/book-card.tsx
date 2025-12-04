@@ -29,7 +29,7 @@ export function BookCard({ book, onDelete, onMove, onRename }: BookCardProps) {
 
   const handleRead = () => {
     const chapterIndex = book.currentChapter || 0
-    router.push(`/reader/${book.id}/${chapterIndex}`)
+    router.push(`/reader?bookId=${book.id}&chapterId=${chapterIndex}`)
   }
 
   const handleDelete = () => {

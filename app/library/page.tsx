@@ -553,7 +553,7 @@ export default function LibraryPage() {
                       <div className="flex w-full justify-start sm:w-auto sm:justify-end">
                         <Button
                           size="sm"
-                          onClick={() => router.push(`/reader/${resumeBook.id}/${resumeBook.currentChapter || 0}`)}
+                          onClick={() => router.push(`/reader?bookId=${resumeBook.id}&chapterId=${resumeBook.currentChapter || 0}`)}
                           className="w-full sm:w-auto"
                         >
                           <BookOpen className="mr-1.5 h-4 w-4" />
