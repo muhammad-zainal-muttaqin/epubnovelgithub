@@ -10,7 +10,19 @@ import { saveBook } from "@/lib/db/books"
 import { saveChapters } from "@/lib/db/chapters"
 import { useToast } from "@/hooks/use-toast"
 
-export function UploadButton({ onUploadComplete, className, children, currentFolderId }: { onUploadComplete?: () => void; className?: string; children?: React.ReactNode; currentFolderId?: string | null }) {
+export function UploadButton({ 
+  onUploadComplete, 
+  className, 
+  children, 
+  currentFolderId,
+  variant
+}: { 
+  onUploadComplete?: () => void; 
+  className?: string; 
+  children?: React.ReactNode; 
+  currentFolderId?: string | null;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | null | undefined;
+}) {
   const [isUploading, setIsUploading] = useState(false)
   const uploadId = useId().replace(/:/g, "")
   const { toast } = useToast()
@@ -80,7 +92,7 @@ export function UploadButton({ onUploadComplete, className, children, currentFol
         name={uploadId}
       />
       <label htmlFor={uploadId}>
-        <Button disabled={isUploading} asChild className={className}>
+        <Button disabled={isUploading} asChild className={className} variant={variant}>
           <span className="cursor-pointer">
             {isUploading ? (
               <>

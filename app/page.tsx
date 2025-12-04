@@ -115,6 +115,7 @@ export default function HomePage() {
               </Button>
               <UploadButton
                 onUploadComplete={() => router.push("/library")}
+                variant="outline"
                 className="h-12 w-full sm:w-auto min-w-[200px] rounded-full border-slate-200 px-8 text-base hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5"
               >
                 <span className="flex items-center justify-center gap-2">
@@ -165,7 +166,7 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode; titl
       <div className="mb-3 inline-flex rounded-lg bg-slate-100 p-2 dark:bg-white/5">
         {icon}
       </div>
-      <h3 className="mb-2 font-semibold text-slate-900 dark:text-white">{title}</h3>
+      <h2 className="mb-2 font-semibold text-slate-900 dark:text-white">{title}</h2>
       <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   )
