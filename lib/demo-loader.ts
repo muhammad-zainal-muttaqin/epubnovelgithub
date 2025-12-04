@@ -12,7 +12,9 @@ export async function loadDemoEPUBIfNeeded() {
     const demoLoaded = localStorage.getItem(DEMO_LOADED_KEY)
     if (demoLoaded === "true") return
 
-    const response = await fetch("/example-demo.epub")
+    const basePath = window.location.pathname.includes("/epubnovelgithub/") ? "/epubnovelgithub" : ""
+    const demoUrl = `${basePath}/example-demo.epub`
+    const response = await fetch(demoUrl)
     if (!response.ok) {
       console.warn("Demo EPUB file not found, skipping demo load")
       localStorage.setItem(DEMO_LOADED_KEY, "true")
