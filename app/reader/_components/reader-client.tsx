@@ -502,10 +502,15 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
       }
 
       for (let i = 0; i < chunks.length; i++) {
+        // Add a small delay between chunks to respect rate limits
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 1500))
+        }
+
         const chunk = chunks[i]
         
         try {
-          const chunkTranslated = await translateTextClient(
+          let chunkTranslated = await translateTextClient(
             chunk,
             targetLang,
             settings.apiKey,

@@ -19,7 +19,7 @@ export async function translateTextClient(
     },
   })
 
-  const prompt = `
+    const prompt = `
     You are a professional literary translator specializing in fiction novels (Light Novels, Web Novels, Fantasy, Romance, etc.).
 
     CONTEXT INFORMATION:
@@ -64,6 +64,7 @@ export async function translateTextClient(
        - Keep class names, ids, and data attributes EXACTLY unchanged.
        - Do not add conversational filler ("Here is the translation...", "Sure!", etc.). Just return the HTML.
        - If the content is already in ${targetLang}, return it as is.
+       - **IMPORTANT:** Ensure ALL text is translated. Do not leave any sentences in the original language.
 
     OUTPUT:
     Return ONLY the final translated HTML string.
@@ -72,15 +73,39 @@ export async function translateTextClient(
     ${text}
   `
 
-  const result = await model.generateContent(prompt)
-  const response = await result.response
-  let translatedText = response.text()
+  let attempt = 0;
+  const maxRetries = 3;
+  let lastError;
 
-  translatedText = translatedText
-    .replace(/^```html\n/, "")
-    .replace(/\n```$/, "")
-  translatedText = translatedText.replace(/^```\n/, "").replace(/\n```$/, "")
+  while (attempt < maxRetries) {
+    try {
+      const result = await model.generateContent(prompt)
+      const response = await result.response
+      let translatedText = response.text()
 
-  return translatedText
+      if (!translatedText) {
+         throw new Error("Empty response from translation model");
+      }
+
+      translatedText = translatedText
+        .replace(/^```html\n/, "")
+        .replace(/\n```$/, "")
+      translatedText = translatedText.replace(/^```\n/, "").replace(/\n```$/, "")
+
+      return translatedText
+    } catch (error: any) {
+      console.error(`Translation attempt ${attempt + 1} failed:`, error)
+      lastError = error;
+      attempt++;
+      
+      // Exponential backoff: 1s, 2s, 4s
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError || new Error("Translation failed after multiple attempts");
 }
 
