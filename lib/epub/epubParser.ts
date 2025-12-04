@@ -162,7 +162,8 @@ function rewriteInternalLinks(
       const chapterIndex = hrefToIndexMap.get(baseHref)
       
       if (chapterIndex !== undefined) {
-        const newHref = `/reader/${bookId}/${chapterIndex}${anchor ? "#" + anchor : ""}`
+        const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
+        const newHref = `${basePath}/reader?bookId=${bookId}&chapterId=${chapterIndex}${anchor ? "#" + anchor : ""}`
         return `<a${before}href="${newHref}"${after}>`
       }
     } catch (error) {
