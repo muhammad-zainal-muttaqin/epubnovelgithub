@@ -13,7 +13,13 @@ export async function loadDemoEPUBIfNeeded() {
     if (demoLoaded === "true") return
 
     const basePath = window.location.pathname.includes("/epubnovelgithub/") ? "/epubnovelgithub" : ""
-    const demoUrl = `${basePath}/example-demo.epub`
+    
+    let demoUrl = `${basePath}/example-demo.epub`
+    
+    if (basePath === "/epubnovelgithub") {
+      demoUrl = "https://raw.githubusercontent.com/muhammad-zainal-muttaqin/epubnovelgithub/main/public/example-demo.epub"
+    }
+    
     const response = await fetch(demoUrl)
     if (!response.ok) {
       console.warn("Demo EPUB file not found, skipping demo load")
