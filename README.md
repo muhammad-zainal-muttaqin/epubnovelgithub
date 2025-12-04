@@ -6,12 +6,11 @@ A modern, privacy-first web application for reading EPUB novels with a clean int
 
 ## ✨ Features
 
-### 🎁 Demo EPUB (New!)
-- **Instant Demo**: Automatic EPUB demo book loads on first visit
-- **No Upload Required**: Users can immediately explore full reading experience
-- **One-Time Load**: Demo loads once and persists in local storage
-- **Smart Parsing**: Full chapter parsing with images and metadata extraction
-- **Complete Experience**: Users can test all features without uploading their own EPUB
+### 🎁 Example EPUB Download
+- **Quick Start**: Download example EPUB directly from the library
+- **Try Before Upload**: Test the app with a sample novel first
+- **Full Features**: Example demonstrates all reading features
+- **Easy Access**: One-click download button in library context
 
 ### 🤖 AI Translation
 - **Context-Aware Translation**: Translates novels to your preferred language using Google Gemini AI.
@@ -81,9 +80,9 @@ A modern, privacy-first web application for reading EPUB novels with a clean int
 ## 📖 Usage Guide
 
 ### Getting Started
-1. **Try Demo Book**: A demo novel automatically loads on your first visit - explore all features without uploading!
-2. **Upload Books**: Click the upload button to add your own EPUB files to your library
-3. **Browse Library**: View all your books (including demo) with progress indicators
+1. **Download Example**: Click "Download Example EPUB" in the library context section
+2. **Upload Books**: Click the upload button or drag & drop to add your EPUB files
+3. **Browse Library**: View all your books with progress indicators
 4. **Start Reading**: Click "Read" or "Continue" to open a book
 5. **Customize Settings**: Adjust fonts, themes, and layout preferences
 
