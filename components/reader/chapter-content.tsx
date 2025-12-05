@@ -72,40 +72,66 @@ export function ChapterContent({
   const bookIdRef = useRef(bookId)
   const chapterIndexRef = useRef(chapterIndex)
   const hasScrolledRef = useRef(false)
+  const onScrollRef = useRef(onScroll)
   const [isVisible, setIsVisible] = useState(false)
+
+  // Throttle refs - keep outside of callbacks to avoid recreating
+  const lastScrollCallbackTime = useRef(0)
+  const lastSaveTime = useRef(0)
+  const pendingScrollCallback = useRef<number | null>(null)
+  const pendingSave = useRef<number | null>(null)
 
   useEffect(() => {
     bookIdRef.current = bookId
     chapterIndexRef.current = chapterIndex
-  }, [bookId, chapterIndex])
+    onScrollRef.current = onScroll
+  }, [bookId, chapterIndex, onScroll])
 
-  // Save scroll position when unmounting - only if user actually scrolled
+  // Save scroll position when unmounting
   useEffect(() => {
     return () => {
+      if (pendingScrollCallback.current) cancelAnimationFrame(pendingScrollCallback.current)
+      if (pendingSave.current) cancelAnimationFrame(pendingSave.current)
       if (hasScrolledRef.current && currentScrollRef.current !== null) {
         saveScrollPosition(bookIdRef.current, chapterIndexRef.current, currentScrollRef.current)
       }
     }
   }, [])
 
-  const getScrollPercentage = useCallback((): number => {
-    const scrollTop = window.scrollY || document.documentElement.scrollTop
-    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
-    return scrollHeight > 0 ? Math.min((scrollTop / scrollHeight) * 100, 100) : 0
-  }, [])
-
-  const handleScroll = useCallback(() => {
-    const percentage = getScrollPercentage()
-    hasScrolledRef.current = true
-    currentScrollRef.current = percentage
-    onScroll?.(percentage)
-    saveScrollPosition(bookIdRef.current, chapterIndexRef.current, percentage)
-  }, [getScrollPercentage, onScroll])
-
+  // Ultra-lightweight scroll handler - minimal work, no state updates
   useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
+      const percentage = scrollHeight > 0 ? Math.min((scrollTop / scrollHeight) * 100, 100) : 0
+
+      hasScrolledRef.current = true
+      currentScrollRef.current = percentage
+
+      const now = performance.now()
+
+      // Throttle onScroll callback to max ~10fps (100ms) to prevent React re-render spam
+      if (now - lastScrollCallbackTime.current > 100) {
+        lastScrollCallbackTime.current = now
+        if (pendingScrollCallback.current) cancelAnimationFrame(pendingScrollCallback.current)
+        pendingScrollCallback.current = requestAnimationFrame(() => {
+          onScrollRef.current?.(percentage)
+        })
+      }
+
+      // Throttle save to max every 1 second
+      if (now - lastSaveTime.current > 1000) {
+        lastSaveTime.current = now
+        if (pendingSave.current) cancelAnimationFrame(pendingSave.current)
+        pendingSave.current = requestAnimationFrame(() => {
+          saveScrollPosition(bookIdRef.current, chapterIndexRef.current, currentScrollRef.current ?? 0)
+        })
+      }
+    }
+
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
-  }, [handleScroll])
+  }, []) // Empty deps - use refs for everything
 
   useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
@@ -125,10 +151,11 @@ export function ChapterContent({
 
   // Restore scroll position when component mounts or chapter changes
   useLayoutEffect(() => {
-    // Hide content while we restore scroll
     setIsVisible(false)
     hasScrolledRef.current = false
     currentScrollRef.current = null
+    lastScrollCallbackTime.current = 0
+    lastSaveTime.current = 0
 
     const positions = getScrollPositions(bookId)
     const savedScrollPercent = positions.get(chapterIndex) ?? 0
@@ -146,7 +173,6 @@ export function ChapterContent({
           return
         }
         currentScrollRef.current = 0
-        // Show content after scroll is set
         setIsVisible(true)
         return
       }
@@ -159,7 +185,6 @@ export function ChapterContent({
       const actualPercent = scrollHeight > 0 ? (actualScrollTop / scrollHeight) * 100 : 0
 
       if (Math.abs(actualPercent - savedScrollPercent) < 5 || attempts >= 10) {
-        // Show content after scroll is successfully set
         setIsVisible(true)
         return
       }
@@ -167,7 +192,6 @@ export function ChapterContent({
       rafId = requestAnimationFrame(applyScroll)
     }
 
-    // Start immediately with requestAnimationFrame (no setTimeout delay)
     rafId = requestAnimationFrame(applyScroll)
 
     return () => {
