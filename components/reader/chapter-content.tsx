@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useRef, useCallback } from "react"
+import { useEffect, useLayoutEffect, useRef, useCallback, useState } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
@@ -72,6 +72,7 @@ export function ChapterContent({
   const bookIdRef = useRef(bookId)
   const chapterIndexRef = useRef(chapterIndex)
   const hasScrolledRef = useRef(false)
+  const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
     bookIdRef.current = bookId
@@ -124,6 +125,8 @@ export function ChapterContent({
 
   // Restore scroll position when component mounts or chapter changes
   useLayoutEffect(() => {
+    // Hide content while we restore scroll
+    setIsVisible(false)
     hasScrolledRef.current = false
     currentScrollRef.current = null
 
@@ -132,7 +135,6 @@ export function ChapterContent({
 
     let attempts = 0
     let rafId: number | null = null
-    let timeoutId: NodeJS.Timeout | null = null
 
     const applyScroll = () => {
       attempts++
@@ -144,6 +146,8 @@ export function ChapterContent({
           return
         }
         currentScrollRef.current = 0
+        // Show content after scroll is set
+        setIsVisible(true)
         return
       }
 
@@ -155,18 +159,18 @@ export function ChapterContent({
       const actualPercent = scrollHeight > 0 ? (actualScrollTop / scrollHeight) * 100 : 0
 
       if (Math.abs(actualPercent - savedScrollPercent) < 5 || attempts >= 10) {
+        // Show content after scroll is successfully set
+        setIsVisible(true)
         return
       }
 
       rafId = requestAnimationFrame(applyScroll)
     }
 
-    timeoutId = setTimeout(() => {
-      rafId = requestAnimationFrame(applyScroll)
-    }, 100)
+    // Start immediately with requestAnimationFrame (no setTimeout delay)
+    rafId = requestAnimationFrame(applyScroll)
 
     return () => {
-      if (timeoutId) clearTimeout(timeoutId)
       if (rafId !== null) cancelAnimationFrame(rafId)
     }
   }, [bookId, chapterIndex, content])
@@ -182,7 +186,14 @@ export function ChapterContent({
   const textAlignMap = { left: "text-left", center: "text-center", right: "text-right", justify: "text-justify" }
 
   return (
-    <div ref={contentRef} className="h-full overflow-y-auto scrollbar-hide chapter-scroll" data-chapter-content>
+    <div
+      ref={contentRef}
+      className={cn(
+        "min-h-full transition-opacity duration-150 ease-out",
+        isVisible ? "opacity-100" : "opacity-0"
+      )}
+      data-chapter-content
+    >
       <article
         className={cn(
           "prose prose-neutral dark:prose-invert mx-auto px-4 pt-24 pb-32 pb-[calc(8rem+env(safe-area-inset-bottom))]",

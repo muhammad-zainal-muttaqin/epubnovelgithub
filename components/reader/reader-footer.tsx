@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Type, Moon, Sun, List, ArrowUp } from 'lucide-react'
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { cn } from "@/lib/utils"
 
 interface ReaderFooterProps {
@@ -16,6 +16,7 @@ interface ReaderFooterProps {
   onChapterListToggle: () => void
   onBackToTop: () => void
   theme: "light" | "dark"
+  chapterIndex?: number
 }
 
 export function ReaderFooter({
@@ -29,15 +30,41 @@ export function ReaderFooter({
   onChapterListToggle,
   onBackToTop,
   theme,
+  chapterIndex,
 }: ReaderFooterProps) {
   const [isAtBottom, setIsAtBottom] = useState(false)
+  const isTransitioningRef = useRef(false)
+  const prevChapterRef = useRef(chapterIndex)
+
+  // When chapter changes, keep current state until scroll restoration completes
+  useEffect(() => {
+    if (prevChapterRef.current !== chapterIndex) {
+      isTransitioningRef.current = true
+      prevChapterRef.current = chapterIndex
+
+      // Allow state updates after scroll restoration (150ms delay in chapter-content + buffer)
+      const timer = setTimeout(() => {
+        isTransitioningRef.current = false
+        // Check actual scroll position now
+        const windowHeight = window.innerHeight
+        const documentHeight = document.documentElement.scrollHeight
+        const scrollY = window.scrollY
+        setIsAtBottom((windowHeight + scrollY) >= documentHeight - 50)
+      }, 300)
+
+      return () => clearTimeout(timer)
+    }
+  }, [chapterIndex])
 
   useEffect(() => {
     const handleScroll = () => {
+      // Don't update during chapter transition
+      if (isTransitioningRef.current) return
+
       const windowHeight = window.innerHeight
       const documentHeight = document.documentElement.scrollHeight
       const scrollY = window.scrollY
-      
+
       // Check if we are near the bottom (within 50px)
       setIsAtBottom((windowHeight + scrollY) >= documentHeight - 50)
     }
@@ -48,16 +75,16 @@ export function ReaderFooter({
   }, [])
 
   return (
-    <footer 
+    <footer
       className={cn(
         "fixed bottom-0 z-40 w-full flex justify-center transition-all duration-300 ease-in-out",
         !isAtBottom ? "pb-6" : "pb-0"
       )}
     >
-      <div 
+      <div
         className={cn(
           "flex items-center justify-between transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)]",
-          !isAtBottom 
+          !isAtBottom
             ? "w-[95%] max-w-3xl h-14 rounded-full bg-[#f9f7f1]/98 backdrop-blur-xl shadow-[0_-8px_30px_rgb(0,0,0,0.04)] px-2.5 dark:bg-background/98 dark:shadow-[0_-8px_30px_rgb(0,0,0,0.2)]"
             : "w-full h-auto bg-[#f9f7f1]/98 backdrop-blur supports-[backdrop-filter]:bg-[#f9f7f1]/60 px-4 dark:bg-background/98 dark:supports-[backdrop-filter]:bg-background/60 pb-[env(safe-area-inset-bottom)] rounded-none"
         )}

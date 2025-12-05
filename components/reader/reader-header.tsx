@@ -19,25 +19,48 @@ interface ReaderHeaderProps {
   isTranslating: boolean
   currentLanguage: string
   onTranslate: (lang: string, force?: boolean) => void
+  chapterIndex?: number
 }
 
-export function ReaderHeader({ 
-  bookTitle, 
-  chapterTitle, 
-  progress, 
-  onSettingsClick, 
-  bookFolderId, 
+export function ReaderHeader({
+  bookTitle,
+  chapterTitle,
+  progress,
+  onSettingsClick,
+  bookFolderId,
   apiKey,
   isTranslating,
   currentLanguage,
-  onTranslate
+  onTranslate,
+  chapterIndex
 }: ReaderHeaderProps) {
   const router = useRouter()
   const [folderSlug, setFolderSlug] = useState<string | null>(null)
   const [isScrolled, setIsScrolled] = useState(false)
+  const isTransitioningRef = useRef(false)
+  const prevChapterRef = useRef(chapterIndex)
+
+  // When chapter changes, keep current state until scroll restoration completes
+  useEffect(() => {
+    if (prevChapterRef.current !== chapterIndex) {
+      isTransitioningRef.current = true
+      prevChapterRef.current = chapterIndex
+
+      // Allow state updates after scroll restoration (150ms delay in chapter-content + buffer)
+      const timer = setTimeout(() => {
+        isTransitioningRef.current = false
+        // Check actual scroll position now
+        setIsScrolled(window.scrollY > 10)
+      }, 300)
+
+      return () => clearTimeout(timer)
+    }
+  }, [chapterIndex])
 
   useEffect(() => {
     const handleScroll = () => {
+      // Don't update during chapter transition
+      if (isTransitioningRef.current) return
       setIsScrolled(window.scrollY > 10)
     }
 
@@ -66,16 +89,16 @@ export function ReaderHeader({
   }
 
   return (
-    <header 
+    <header
       className={cn(
         "fixed top-0 z-40 w-full flex justify-center transition-all duration-300 ease-in-out",
         isScrolled ? "pt-6" : "pt-0"
       )}
     >
-      <div 
+      <div
         className={cn(
           "flex items-center justify-between transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)]",
-          isScrolled 
+          isScrolled
             ? "w-[95%] max-w-3xl h-12 rounded-full bg-[#f9f7f1]/98 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] px-2 dark:bg-background/98 dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]"
             : "w-full h-14 bg-[#f9f7f1]/98 backdrop-blur supports-[backdrop-filter]:bg-[#f9f7f1]/60 px-4 dark:bg-background/98 dark:supports-[backdrop-filter]:bg-background/60 rounded-none"
         )}
@@ -89,14 +112,14 @@ export function ReaderHeader({
               <h1 className="text-sm font-semibold leading-tight truncate">{bookTitle}</h1>
               <div className="flex items-center gap-2">
                 <p className="text-xs text-muted-foreground truncate max-w-[200px]">{chapterTitle}</p>
-                
+
                 {isTranslating && (
                   <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal animate-pulse gap-1 bg-primary/10 text-primary border-primary/20">
                     <Loader2 className="h-2.5 w-2.5 animate-spin" />
                     Translating...
                   </Badge>
                 )}
-                
+
                 {!isTranslating && currentLanguage && (
                   <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal gap-1 bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20">
                     <Globe className="h-2.5 w-2.5" />
@@ -109,10 +132,10 @@ export function ReaderHeader({
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <span className={cn("hidden text-xs text-muted-foreground sm:inline mr-2 transition-all duration-300", isScrolled ? "text-[10px]" : "")}>{Math.round(progress)}%</span>
-            
+
             <div className="sm:hidden flex items-center mr-1">
-               {isTranslating && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />}
-               {!isTranslating && currentLanguage && <Globe className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />}
+              {isTranslating && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />}
+              {!isTranslating && currentLanguage && <Globe className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />}
             </div>
 
             <TranslateMenu
