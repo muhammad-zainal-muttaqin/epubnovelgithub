@@ -85,8 +85,8 @@ export function ReaderFooter({
         className={cn(
           "flex items-center justify-between transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)]",
           !isAtBottom
-            ? "w-[95%] max-w-3xl h-14 rounded-full bg-[#f9f7f1]/98 backdrop-blur-xl shadow-[0_-8px_30px_rgb(0,0,0,0.04)] px-2.5 dark:bg-background/98 dark:shadow-[0_-8px_30px_rgb(0,0,0,0.2)]"
-            : "w-full h-auto bg-[#f9f7f1]/98 backdrop-blur supports-[backdrop-filter]:bg-[#f9f7f1]/60 px-4 dark:bg-background/98 dark:supports-[backdrop-filter]:bg-background/60 pb-[env(safe-area-inset-bottom)] rounded-none"
+            ? "w-[95%] max-w-3xl h-12 rounded-full border border-[#e8e4dc]/60 bg-[#f9f7f1]/70 backdrop-blur-sm shadow-[0_-8px_32px_rgb(0,0,0,0.08),inset_0_-1px_0_rgba(255,255,255,0.4)] px-2 dark:border-white/10 dark:bg-[#0a0f18]/70 dark:shadow-[0_-8px_32px_rgb(0,0,0,0.3),inset_0_-1px_0_rgba(255,255,255,0.05)]"
+            : "w-full h-auto border-t border-[#e8e4dc]/50 bg-[#f9f7f1]/80 px-4 dark:border-white/5 dark:bg-[#0a0f18]/80 pb-[env(safe-area-inset-bottom)] rounded-none"
         )}
       >
         <div className={cn("container mx-auto max-w-5xl px-2 py-2 w-full", !isAtBottom && "px-4")}>

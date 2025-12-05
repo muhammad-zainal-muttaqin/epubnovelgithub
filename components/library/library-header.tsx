@@ -50,18 +50,18 @@ export function LibraryHeader({
   }, [])
 
   return (
-    <header 
+    <header
       className={cn(
         "fixed top-0 z-40 w-full flex justify-center transition-all duration-300 ease-in-out",
         isScrolled ? "pt-6" : "pt-0"
       )}
     >
-      <div 
+      <div
         className={cn(
           "flex items-center justify-between transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)]",
-          isScrolled 
-            ? "w-[95%] max-w-4xl h-14 rounded-full border border-slate-200/60 bg-white/95 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] px-2.5 dark:border-white/10 dark:bg-[#0a0f18]/95 dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)]"
-            : "w-full h-16 border-b border-slate-200/50 bg-white/95 backdrop-blur-md px-4 dark:border-white/5 dark:bg-[#0a0f18]/95 rounded-none"
+          isScrolled
+            ? "w-[95%] max-w-3xl h-12 rounded-full border border-slate-200/60 bg-white/70 backdrop-blur-sm shadow-[0_8px_32px_rgb(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.6)] px-2 dark:border-white/10 dark:bg-[#0a0f18]/70 dark:shadow-[0_8px_32px_rgb(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.05)]"
+            : "w-full h-14 border-b border-slate-200/50 bg-white/80 px-4 dark:border-white/5 dark:bg-[#0a0f18]/80 rounded-none"
         )}
       >
         <div className={cn("container mx-auto flex items-center justify-between h-full", !isScrolled && "max-w-5xl")}>
@@ -102,32 +102,32 @@ export function LibraryHeader({
           </div>
 
           <div className="hidden md:flex items-center gap-4 flex-1">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onHomeClick} 
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onHomeClick}
               className="h-9 w-9 rounded-full"
               title="Back to Home"
             >
               <Home className="h-4 w-4" />
             </Button>
-            
+
             {currentFolderName && onBackToRoot && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={onBackToRoot} 
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onBackToRoot}
                 className="h-9 w-9 rounded-full"
                 title="Back to Library Root"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
-            
+
             <div className="flex items-baseline gap-2">
               {currentFolderName ? (
                 <div className="flex items-center gap-2 text-lg text-muted-foreground">
-                  <button 
+                  <button
                     onClick={onBackToRoot}
                     className="hover:text-foreground transition-colors cursor-pointer"
                     title="Back to Library Root"
