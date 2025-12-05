@@ -20,6 +20,7 @@ interface ReaderHeaderProps {
   currentLanguage: string
   onTranslate: (lang: string, force?: boolean) => void
   chapterIndex?: number
+  onCancelTranslate?: () => void
 }
 
 export function ReaderHeader({
@@ -32,7 +33,8 @@ export function ReaderHeader({
   isTranslating,
   currentLanguage,
   onTranslate,
-  chapterIndex
+  chapterIndex,
+  onCancelTranslate
 }: ReaderHeaderProps) {
   const router = useRouter()
   const [folderSlug, setFolderSlug] = useState<string | null>(null)
@@ -144,6 +146,7 @@ export function ReaderHeader({
               currentLanguage={currentLanguage}
               onTranslate={onTranslate}
               onOpenSettings={onSettingsClick}
+              onCancelTranslate={onCancelTranslate}
             />
 
             <Button variant="ghost" size="icon" onClick={onSettingsClick} className="h-8 w-8 rounded-full">

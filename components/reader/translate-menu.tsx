@@ -19,6 +19,7 @@ interface TranslateMenuProps {
   currentLanguage: string
   onTranslate: (lang: string, force?: boolean) => void
   onOpenSettings: () => void
+  onCancelTranslate?: () => void
 }
 
 const LANGUAGES = [
@@ -38,6 +39,7 @@ export function TranslateMenu({
   currentLanguage,
   onTranslate,
   onOpenSettings,
+  onCancelTranslate,
 }: TranslateMenuProps) {
   const handleTranslate = (langName: string, force: boolean = false) => {
     if (langName === "original") {
@@ -56,6 +58,14 @@ export function TranslateMenu({
       return
     }
     onTranslate(langName, force)
+  }
+
+  if (isTranslating && onCancelTranslate) {
+    return (
+      <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onCancelTranslate}>
+        <Loader2 className="h-4 w-4 animate-spin" />
+      </Button>
+    )
   }
 
   return (

@@ -68,6 +68,9 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
   const [currentLanguage, setCurrentLanguage] = useState<string>("")
   const [pendingChunks, setPendingChunks] = useState(0)
   const skeletonCacheRef = useRef<Map<string, string[]>>(new Map())
+  const translationCacheRef = useRef<Map<string, string>>(new Map())
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const cancelRequestedRef = useRef(false)
 
 
   const buildSkeletonForChunk = useCallback(
@@ -310,6 +313,13 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
     setSettings((prev: ReaderSettings) => ({ ...prev, ...updates }))
   }, [])
 
+  const handleCancelTranslate = useCallback(() => {
+    cancelRequestedRef.current = true
+    abortControllerRef.current?.abort()
+    setIsTranslating(false)
+    setPendingChunks(0)
+  }, [])
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
@@ -388,11 +398,16 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
       return
     }
 
+    abortControllerRef.current?.abort()
+    cancelRequestedRef.current = false
+    abortControllerRef.current = new AbortController()
     setIsTranslating(true)
     setPendingChunks(0)
     setCurrentLanguage(targetLang)
+    setTranslatedContent(null)
 
     let hasTranslated = false
+    let hadFallback = false
 
     try {
       const imgTags: string[] = []
@@ -416,21 +431,46 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
         setTranslatedContent(skeletons.join(""))
       }
 
+      const makeChunkKey = (chunkStr: string) =>
+        `${currentChapter.id}-${targetLang}-${chunkStr.length}-${chunkStr.slice(0, 32)}-${chunkStr.slice(-32)}`
+
       for (let i = 0; i < chunks.length; i++) {
         // Add a small delay between chunks to respect rate limits
         if (i > 0) {
-          await new Promise(resolve => setTimeout(resolve, 1500))
+          await new Promise(resolve => setTimeout(resolve, 500))
         }
 
         const chunk = chunks[i]
+        const chunkKey = makeChunkKey(chunk)
 
         try {
+          if (cancelRequestedRef.current) {
+            const remaining = Math.max(chunks.length - i, 0)
+            setPendingChunks(remaining)
+            break
+          }
+
+          const cachedChunk = translationCacheRef.current.get(chunkKey)
+          if (cachedChunk) {
+            translatedParts[i] = cachedChunk
+            const remaining = Math.max(chunks.length - i - 1, 0)
+            setTranslatedContent(
+              translatedParts
+                .map((part, idx) => part || skeletons[idx])
+                .join(""),
+            )
+            setPendingChunks(remaining)
+            hasTranslated = true
+            continue
+          }
+
           let chunkTranslated = await translateTextClient(
             chunk,
             targetLang,
             settings.apiKey,
             book?.title || "",
             displayChapterTitle,
+            abortControllerRef.current?.signal,
           )
 
           imgTags.forEach((tag, index) => {
@@ -438,7 +478,41 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
             chunkTranslated = chunkTranslated.replace(placeholderRegex, tag)
           })
 
-          translatedParts[i] = chunkTranslated
+          const plainOriginal = chunk.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().toLowerCase()
+          const plainTranslated = chunkTranslated.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().toLowerCase()
+          const sourceWords = Array.from(new Set((plainOriginal.match(/\b\w{4,}\b/g) || [])))
+          const unchanged = sourceWords.filter((w) => plainTranslated.includes(w)).length
+          const ratio = sourceWords.length ? unchanged / sourceWords.length : 0
+          let poor = !plainTranslated || ratio > 0.7
+
+          if (poor && !cancelRequestedRef.current) {
+            try {
+              const retryTranslated = await translateTextClient(
+                chunk,
+                targetLang,
+                settings.apiKey,
+                book?.title || "",
+                displayChapterTitle,
+                abortControllerRef.current?.signal,
+              )
+              const retryPlain = retryTranslated.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().toLowerCase()
+              const unchangedRetry = sourceWords.filter((w) => retryPlain.includes(w)).length
+              const ratioRetry = sourceWords.length ? unchangedRetry / sourceWords.length : 0
+              const poorRetry = !retryPlain || ratioRetry > 0.7
+              if (!poorRetry) {
+                chunkTranslated = retryTranslated
+                poor = false
+              }
+            } catch (retryErr) {
+              console.error("Retry translation failed:", retryErr)
+            }
+          }
+
+          translatedParts[i] = poor ? chunk : chunkTranslated
+          if (!poor) {
+            translationCacheRef.current.set(chunkKey, chunkTranslated)
+          }
+          hadFallback = hadFallback || poor
           hasTranslated = true
 
           const remaining = Math.max(chunks.length - i - 1, 0)
@@ -451,6 +525,8 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
 
         } catch (chunkError) {
           console.error(`Error translating chunk ${i}:`, chunkError)
+          const chunkErrMsg = chunkError instanceof Error ? chunkError.message : ""
+          const isAbort = chunkErrMsg === "Aborted"
           let chunkOriginal = chunk
           imgTags.forEach((tag, index) => {
             const placeholderRegex = new RegExp(`__\\s*IMG_PLACEHOLDER_${index}\\s*__`, "gi")
@@ -464,9 +540,23 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
               .map((part, idx) => part || skeletons[idx])
               .join(""),
           )
-          toast.error(`Part of translation failed, showing original for that section.`)
+          if (!cancelRequestedRef.current && !isAbort) {
+            toast.error(`Part of translation failed, showing original for that section.`)
+          }
           setPendingChunks(remaining)
+
+          if (cancelRequestedRef.current || isAbort) {
+            break
+          }
         }
+      }
+
+      if (cancelRequestedRef.current) {
+        setPendingChunks(0)
+        setIsTranslating(false)
+        setTranslatedContent(null)
+        setCurrentLanguage("")
+        return
       }
 
       const finalContent = translatedParts.join("")
@@ -480,16 +570,23 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
       })
 
       toast.success(`Translation complete`)
+      if (hadFallback) {
+        toast.message("Some sections kept original text due to low confidence")
+      }
       setTranslatedContent(finalContent)
       setPendingChunks(0)
     } catch (error: any) {
       console.error("Translation error:", error)
-      toast.error("Translation Failed", { description: error.message })
+      if (!cancelRequestedRef.current && error?.message !== "Aborted") {
+        toast.error("Translation Failed", { description: error.message })
+      }
       if (!hasTranslated) {
         setTranslatedContent(null)
         setCurrentLanguage("")
       }
     } finally {
+      abortControllerRef.current = null
+      cancelRequestedRef.current = false
       setIsTranslating(false)
     }
   }, [chapters, currentChapterIndex, settings.apiKey, currentLanguage, translatedContent, book?.title, displayChapterTitle, buildSkeletonForChunk])
@@ -612,6 +709,7 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
           currentLanguage={currentLanguage}
           onTranslate={handleTranslate}
           chapterIndex={currentChapterIndex}
+          onCancelTranslate={handleCancelTranslate}
         />
 
         <main>

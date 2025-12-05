@@ -6,9 +6,14 @@ export async function translateTextClient(
   apiKey: string,
   bookTitle: string = "",
   chapterTitle: string = "",
+  signal?: AbortSignal,
 ): Promise<string> {
   if (!apiKey) {
     throw new Error("API Key is required")
+  }
+
+  if (signal?.aborted) {
+    throw new Error("Aborted")
   }
 
   const genAI = new GoogleGenerativeAI(apiKey)
@@ -79,6 +84,10 @@ export async function translateTextClient(
 
   while (attempt < maxRetries) {
     try {
+      if (signal?.aborted) {
+        throw new Error("Aborted")
+      }
+
       const result = await model.generateContent(prompt)
       const response = await result.response
       let translatedText = response.text()
