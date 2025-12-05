@@ -45,7 +45,7 @@ export function MoveBookDialog({
         <DialogHeader>
           <DialogTitle>Move Book</DialogTitle>
           <p className="text-sm text-muted-foreground mt-2">
-            Move "{bookTitle}" to:
+            Move &quot;{bookTitle}&quot; to:
           </p>
         </DialogHeader>
 

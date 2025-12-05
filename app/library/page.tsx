@@ -15,6 +15,7 @@ import { MoveBookDialog } from "@/components/library/move-book-dialog"
 import { RenameBookDialog } from "@/components/library/rename-book-dialog"
 import { LibraryHeader } from "@/components/library/library-header"
 import { Loader2, BookOpen, Upload } from "lucide-react"
+import Image from "next/image"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -137,7 +138,7 @@ export default function LibraryPage() {
       setCurrentFolderId(null)
       setIsFolderLoading(false)
     }
-  }, [searchParams])
+  }, [searchParams, router])
 
   useEffect(() => {
     setSearchTerm("")
@@ -534,7 +535,13 @@ export default function LibraryPage() {
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
                       <div className="relative h-20 w-16 overflow-hidden rounded-md bg-muted sm:h-16 sm:w-12">
                         {resumeBook.cover ? (
-                          <img src={resumeBook.cover} alt={resumeBook.title} className="h-full w-full object-cover" />
+                          <Image
+                            src={resumeBook.cover}
+                            alt={resumeBook.title}
+                            fill
+                            sizes="64px"
+                            className="object-cover"
+                          />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center">
                             <BookOpen className="h-6 w-6 text-muted-foreground" />

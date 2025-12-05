@@ -3,6 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Folder, MoreVertical, Edit, Trash2 } from "lucide-react"
+import Image from "next/image"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import type { Folder as FolderType, Book } from "@/lib/types"
 
@@ -43,19 +44,37 @@ export function FolderCard({ folder, bookCount, bookCovers, onClick, onRename, o
               <div className={`h-full w-full ${getGridClass(bookCovers.length)} gap-0.5`}>
                 {bookCovers.length === 1 ? (
                   <div className="relative overflow-hidden bg-muted h-full w-full">
-                    <img src={bookCovers[0]} alt="" className="h-full w-full object-cover" />
+                    <Image
+                      src={bookCovers[0]}
+                      alt=""
+                      fill
+                      sizes="112px"
+                      className="object-cover"
+                    />
                   </div>
                 ) : bookCovers.length === 2 ? (
                   bookCovers.map((cover, idx) => (
                     <div key={idx} className="relative overflow-hidden bg-muted">
-                      <img src={cover} alt="" className="h-full w-full object-cover" />
+                      <Image
+                        src={cover}
+                        alt=""
+                        fill
+                        sizes="56px"
+                        className="object-cover"
+                      />
                     </div>
                   ))
                 ) : bookCovers.length === 3 ? (
                   <>
                     {bookCovers.map((cover, idx) => (
                       <div key={idx} className="relative overflow-hidden bg-muted">
-                        <img src={cover} alt="" className="h-full w-full object-cover" />
+                        <Image
+                          src={cover}
+                          alt=""
+                          fill
+                          sizes="56px"
+                          className="object-cover"
+                        />
                       </div>
                     ))}
                     <div className="bg-muted/50 flex items-center justify-center">
@@ -65,7 +84,13 @@ export function FolderCard({ folder, bookCount, bookCovers, onClick, onRename, o
                 ) : (
                   bookCovers.slice(0, 4).map((cover, idx) => (
                     <div key={idx} className="relative overflow-hidden bg-muted">
-                      <img src={cover} alt="" className="h-full w-full object-cover" />
+                      <Image
+                        src={cover}
+                        alt=""
+                        fill
+                        sizes="56px"
+                        className="object-cover"
+                      />
                     </div>
                   ))
                 )}

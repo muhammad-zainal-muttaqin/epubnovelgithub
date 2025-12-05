@@ -58,7 +58,7 @@ export default function PrivacyPage() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Privacy Policy</h1>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            We believe your reading habits are personal. That's why we built an app that doesn't spy on you.
+            We believe your reading habits are personal. That&apos;s why we built an app that doesn&apos;t spy on you.
           </p>
         </div>
 
@@ -92,7 +92,7 @@ export default function PrivacyPage() {
                 <strong className="text-slate-900 dark:text-slate-200">Client-Side Processing:</strong> All EPUB parsing and processing happens in your browser.
               </p>
               <p>
-                <strong className="text-slate-900 dark:text-slate-200">No External API Calls:</strong> The app doesn't make any hidden external API calls.
+                <strong className="text-slate-900 dark:text-slate-200">No External API Calls:</strong> The app doesn&apos;t make any hidden external API calls.
               </p>
           </PrivacySection>
 

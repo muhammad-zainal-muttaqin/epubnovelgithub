@@ -145,8 +145,10 @@ export function ChapterContent({
       router.push(href)
     }
 
-    contentRef.current?.addEventListener("click", handleLinkClick)
-    return () => contentRef.current?.removeEventListener("click", handleLinkClick)
+    const el = contentRef.current
+    if (!el) return
+    el.addEventListener("click", handleLinkClick)
+    return () => el.removeEventListener("click", handleLinkClick)
   }, [router])
 
   // Restore scroll position when component mounts or chapter changes

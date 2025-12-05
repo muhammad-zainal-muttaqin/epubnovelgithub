@@ -173,7 +173,7 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
     }
 
     loadData()
-  }, [bookId, router])
+  }, [bookId, chapterId, router])
 
   useEffect(() => {
     const loadChapterContent = async () => {
@@ -181,7 +181,6 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
       if (!isNaN(chapterIndex) && chapterIndex >= 0 && chapters.length > 0 && chapterIndex < chapters.length) {
         setCurrentChapterIndex(chapterIndex)
 
-        // Load translation if needed
         const targetLang = settings.targetLanguage
         if (targetLang && targetLang !== "original") {
           const chapter = chapters[chapterIndex]
@@ -200,7 +199,7 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
       }
     }
     loadChapterContent()
-  }, [chapterId, chapters.length])
+  }, [chapterId, chapters, settings.targetLanguage])
 
   useEffect(() => {
     if (!chapters.length) return
@@ -247,38 +246,6 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.READER_SETTINGS, JSON.stringify(settings))
   }, [settings])
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
-
-      switch (e.key) {
-        case "ArrowLeft":
-          e.preventDefault()
-          handlePrevChapter()
-          break
-        case "ArrowRight":
-          e.preventDefault()
-          handleNextChapter()
-          break
-        case "[":
-          e.preventDefault()
-          handleFontDecrease()
-          break
-        case "]":
-          e.preventDefault()
-          handleFontIncrease()
-          break
-        case "t":
-          e.preventDefault()
-          handleThemeToggle()
-          break
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [currentChapterIndex, chapters.length, settings])
 
   const handleScrollProgress = useCallback(
     (percent: number) => {
@@ -342,6 +309,38 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
   const handleSettingsChange = useCallback((updates: Partial<ReaderSettings>) => {
     setSettings((prev: ReaderSettings) => ({ ...prev, ...updates }))
   }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+
+      switch (e.key) {
+        case "ArrowLeft":
+          e.preventDefault()
+          handlePrevChapter()
+          break
+        case "ArrowRight":
+          e.preventDefault()
+          handleNextChapter()
+          break
+        case "[":
+          e.preventDefault()
+          handleFontDecrease()
+          break
+        case "]":
+          e.preventDefault()
+          handleFontIncrease()
+          break
+        case "t":
+          e.preventDefault()
+          handleThemeToggle()
+          break
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [handlePrevChapter, handleNextChapter, handleFontDecrease, handleFontIncrease, handleThemeToggle])
 
   const currentChapter = chapters[currentChapterIndex]
   const overallProgress = Math.min(((currentChapterIndex + scrollProgress / 100) / chapters.length) * 100, 100)

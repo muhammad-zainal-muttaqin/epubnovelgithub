@@ -2,6 +2,7 @@
 
 import { formatDistanceToNow } from "date-fns"
 import { BookOpen, Clock3, FolderInput, MoreVertical, Trash2, Pencil } from "lucide-react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -50,7 +51,13 @@ export function BookCard({ book, onDelete, onMove, onRename }: BookCardProps) {
         <div className="flex flex-col gap-4 sm:flex-row">
           <div className="relative h-44 w-full overflow-hidden rounded-lg bg-muted sm:h-36 sm:w-28 sm:flex-shrink-0">
             {book.cover ? (
-              <img src={book.cover || "/placeholder.svg"} alt={book.title} className="h-full w-full object-cover" />
+              <Image
+                src={book.cover || "/placeholder.svg"}
+                alt={book.title}
+                fill
+                sizes="(max-width: 640px) 100vw, 176px"
+                className="object-cover"
+              />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
                 <BookOpen className="h-10 w-10 text-muted-foreground" />
