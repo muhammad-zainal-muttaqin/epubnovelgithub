@@ -401,7 +401,7 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
         return `__IMG_PLACEHOLDER_${imgTags.length - 1}__`
       })
 
-      const chunks = splitHtmlIntoChunks(contentWithPlaceholders, 1200)
+      const chunks = splitHtmlIntoChunks(contentWithPlaceholders, 5000)
       setPendingChunks(chunks.length)
 
       const skeletonKey = `${currentChapter.id}-${targetLang}-${contentWithPlaceholders.length}-${chunks.length}-${chunks.map((c) => c.length).join(",")}`

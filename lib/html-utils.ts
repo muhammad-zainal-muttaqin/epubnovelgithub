@@ -1,4 +1,4 @@
-export function splitHtmlIntoChunks(html: string, maxChunkSize: number = 1200): string[] {
+export function splitHtmlIntoChunks(html: string, maxChunkSize: number = 5000): string[] {
   const splitRegex = /(<\/(?:p|div|blockquote|h[1-6]|li|ul|ol|table|article|section)>)/i
   const parts = html.split(splitRegex)
   const chunks: string[] = []
