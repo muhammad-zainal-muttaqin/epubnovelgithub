@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useRef } from "react"
+import { useEffect, useLayoutEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
@@ -14,7 +14,43 @@ interface ChapterContentProps {
   onScroll?: (scrollPercentage: number) => void
   isTranslating?: boolean
   pendingChunks?: number
-  initialScrollPercent?: number
+  bookId: string
+  chapterIndex: number
+}
+
+function getScrollPositions(bookId: string): Map<number, number> {
+  const map = new Map<number, number>()
+  if (typeof window === "undefined") return map
+  try {
+    const saved = localStorage.getItem(`chapter-scroll-${bookId}`)
+    if (saved) {
+      const parsed = JSON.parse(saved) as Record<string, number>
+      Object.entries(parsed).forEach(([idx, value]) => {
+        const numIdx = Number.parseInt(idx)
+        if (!Number.isNaN(numIdx) && typeof value === "number") {
+          map.set(numIdx, value)
+        }
+      })
+    }
+  } catch (e) {
+    console.error("Failed to load scroll positions", e)
+  }
+  return map
+}
+
+function saveScrollPosition(bookId: string, chapterIndex: number, scrollPercent: number) {
+  if (typeof window === "undefined") return
+  try {
+    const positions = getScrollPositions(bookId)
+    positions.set(chapterIndex, scrollPercent)
+    const payload: Record<string, number> = {}
+    positions.forEach((value, key) => {
+      payload[String(key)] = value
+    })
+    localStorage.setItem(`chapter-scroll-${bookId}`, JSON.stringify(payload))
+  } catch (e) {
+    console.error("Failed to save scroll position", e)
+  }
 }
 
 export function ChapterContent({
@@ -27,28 +63,48 @@ export function ChapterContent({
   onScroll,
   isTranslating,
   pendingChunks = 0,
-  initialScrollPercent,
+  bookId,
+  chapterIndex,
 }: ChapterContentProps) {
   const router = useRouter()
   const contentRef = useRef<HTMLDivElement>(null)
-  const readyRef = useRef(false)
+  const currentScrollRef = useRef<number | null>(null)
+  const bookIdRef = useRef(bookId)
+  const chapterIndexRef = useRef(chapterIndex)
+  const hasScrolledRef = useRef(false)
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (!contentRef.current || !onScroll || !readyRef.current) return
+    bookIdRef.current = bookId
+    chapterIndexRef.current = chapterIndex
+  }, [bookId, chapterIndex])
 
-      const element = contentRef.current
-      const scrollHeight = element.scrollHeight - element.clientHeight
-      const percentage = scrollHeight > 0 ? Math.min((element.scrollTop / scrollHeight) * 100, 100) : 100
-      onScroll(percentage)
+  // Save scroll position when unmounting - only if user actually scrolled
+  useEffect(() => {
+    return () => {
+      if (hasScrolledRef.current && currentScrollRef.current !== null) {
+        saveScrollPosition(bookIdRef.current, chapterIndexRef.current, currentScrollRef.current)
+      }
     }
+  }, [])
 
-    const element = contentRef.current
-    if (element) {
-      element.addEventListener("scroll", handleScroll)
-      return () => element.removeEventListener("scroll", handleScroll)
-    }
-  }, [onScroll])
+  const getScrollPercentage = useCallback((): number => {
+    const scrollTop = window.scrollY || document.documentElement.scrollTop
+    const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
+    return scrollHeight > 0 ? Math.min((scrollTop / scrollHeight) * 100, 100) : 0
+  }, [])
+
+  const handleScroll = useCallback(() => {
+    const percentage = getScrollPercentage()
+    hasScrolledRef.current = true
+    currentScrollRef.current = percentage
+    onScroll?.(percentage)
+    saveScrollPosition(bookIdRef.current, chapterIndexRef.current, percentage)
+  }, [getScrollPercentage, onScroll])
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [handleScroll])
 
   useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
@@ -66,42 +122,54 @@ export function ChapterContent({
     return () => contentRef.current?.removeEventListener("click", handleLinkClick)
   }, [router])
 
+  // Restore scroll position when component mounts or chapter changes
   useLayoutEffect(() => {
-    const el = contentRef.current
-    if (!el || initialScrollPercent == null) {
-      if (el) readyRef.current = true
-      return
-    }
+    hasScrolledRef.current = false
+    currentScrollRef.current = null
 
-    readyRef.current = false
-    const clamped = Math.max(0, Math.min(100, initialScrollPercent))
+    const positions = getScrollPositions(bookId)
+    const savedScrollPercent = positions.get(chapterIndex) ?? 0
+
     let attempts = 0
+    let rafId: number | null = null
+    let timeoutId: NodeJS.Timeout | null = null
 
     const applyScroll = () => {
-      const maxScroll = el.scrollHeight - el.clientHeight
-      if (maxScroll <= 0) {
-        readyRef.current = true
-        onScroll?.(100)
-        return
-      }
+      attempts++
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
 
-      el.scrollTop = Math.round((clamped / 100) * maxScroll)
-      attempts += 1
-
-      if (Math.abs(el.scrollTop - Math.round((clamped / 100) * maxScroll)) < 2 || attempts >= 5) {
-        readyRef.current = true
-        if (onScroll) {
-          const scrollHeight = el.scrollHeight - el.clientHeight
-          onScroll(scrollHeight > 0 ? Math.min((el.scrollTop / scrollHeight) * 100, 100) : 100)
+      if (scrollHeight <= 10) {
+        if (attempts < 50) {
+          rafId = requestAnimationFrame(applyScroll)
+          return
         }
+        currentScrollRef.current = 0
         return
       }
 
-      requestAnimationFrame(applyScroll)
+      const targetScrollTop = Math.round((savedScrollPercent / 100) * scrollHeight)
+      window.scrollTo({ top: targetScrollTop, behavior: 'instant' })
+      currentScrollRef.current = savedScrollPercent
+
+      const actualScrollTop = window.scrollY || document.documentElement.scrollTop
+      const actualPercent = scrollHeight > 0 ? (actualScrollTop / scrollHeight) * 100 : 0
+
+      if (Math.abs(actualPercent - savedScrollPercent) < 5 || attempts >= 10) {
+        return
+      }
+
+      rafId = requestAnimationFrame(applyScroll)
     }
 
-    return () => cancelAnimationFrame(requestAnimationFrame(applyScroll))
-  }, [content, initialScrollPercent, onScroll])
+    timeoutId = setTimeout(() => {
+      rafId = requestAnimationFrame(applyScroll)
+    }, 100)
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId)
+      if (rafId !== null) cancelAnimationFrame(rafId)
+    }
+  }, [bookId, chapterIndex, content])
 
   const fontFamilyMap = {
     sans: "font-sans", serif: "font-serif", mono: "font-mono",

@@ -68,19 +68,7 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
   const [currentLanguage, setCurrentLanguage] = useState<string>("")
   const [pendingChunks, setPendingChunks] = useState(0)
   const skeletonCacheRef = useRef<Map<string, string[]>>(new Map())
-  const scrollSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [initialScrollPercent, setInitialScrollPercent] = useState<number | undefined>(undefined)
-  const chapterScrollPositionsRef = useRef<Map<number, number>>(new Map())
-  const scrollProgressRef = useRef(scrollProgress)
-  const currentChapterIndexRef = useRef(currentChapterIndex)
 
-  useEffect(() => {
-    scrollProgressRef.current = scrollProgress
-  }, [scrollProgress])
-
-  useEffect(() => {
-    currentChapterIndexRef.current = currentChapterIndex
-  }, [currentChapterIndex])
 
   const buildSkeletonForChunk = useCallback(
     (htmlChunk: string, seed: number, fontSize = settings.fontSize, maxWidth = settings.maxWidth) => {
@@ -126,37 +114,7 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
     },
     [settings.fontSize, settings.maxWidth],
   )
-  const persistScrollPositions = useCallback(() => {
-    if (typeof window === "undefined") return
-    const payload: Record<string, number> = {}
-    chapterScrollPositionsRef.current.forEach((value: number, key: number) => {
-      payload[String(key)] = value
-    })
-    try {
-      localStorage.setItem(`chapter-scroll-${bookId}`, JSON.stringify(payload))
-    } catch (error) {
-      console.error("Failed to persist scroll positions", error)
-    }
-  }, [bookId])
 
-  const loadScrollPositions = useCallback(() => {
-    const map = new Map<number, number>()
-    if (typeof window === "undefined") return map
-    const saved = localStorage.getItem(`chapter-scroll-${bookId}`)
-    if (!saved) return map
-    try {
-      const parsed = JSON.parse(saved) as Record<string, number>
-      Object.entries(parsed).forEach(([idx, value]) => {
-        const numIdx = Number.parseInt(idx)
-        if (!Number.isNaN(numIdx) && typeof value === "number") {
-          map.set(numIdx, value)
-        }
-      })
-    } catch (error) {
-      console.error("Failed to load scroll positions", error)
-    }
-    return map
-  }, [bookId])
 
   useEffect(() => {
     const savedSettings = localStorage.getItem(STORAGE_KEYS.READER_SETTINGS)
@@ -165,24 +123,7 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
     }
   }, [])
 
-  useEffect(() => {
-    const loaded = loadScrollPositions()
-    chapterScrollPositionsRef.current = loaded
 
-    const saved = loaded.get(currentChapterIndex)
-    const value = typeof saved === "number" ? saved : 0
-    setInitialScrollPercent(value)
-    setScrollProgress(value)
-  }, [bookId, loadScrollPositions, currentChapterIndex])
-
-  useEffect(() => {
-    return () => {
-      const idx = currentChapterIndexRef.current
-      const scroll = scrollProgressRef.current
-      chapterScrollPositionsRef.current.set(idx, scroll)
-      persistScrollPositions()
-    }
-  }, [chapterId, persistScrollPositions])
 
   useEffect(() => {
     const loadData = async () => {
@@ -208,7 +149,7 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
         } else {
           setCurrentChapterIndex(0)
         }
-        
+
         const savedTOCChapters = localStorage.getItem(`toc-chapters-${bookId}`)
         if (savedTOCChapters) {
           try {
@@ -239,11 +180,8 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
       const chapterIndex = Number.parseInt(chapterId)
       if (!isNaN(chapterIndex) && chapterIndex >= 0 && chapters.length > 0 && chapterIndex < chapters.length) {
         setCurrentChapterIndex(chapterIndex)
-        
-        const savedScroll = chapterScrollPositionsRef.current.get(chapterIndex) ?? 0
-        setInitialScrollPercent(savedScroll)
-        setScrollProgress(savedScroll)
-        
+
+        // Load translation if needed
         const targetLang = settings.targetLanguage
         if (targetLang && targetLang !== "original") {
           const chapter = chapters[chapterIndex]
@@ -277,14 +215,7 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
     }
   }, [bookId, chapters.length, currentChapterIndex])
 
-  useEffect(() => {
-    return () => {
-      if (scrollSaveTimeoutRef.current) {
-        clearTimeout(scrollSaveTimeoutRef.current)
-      }
-      persistScrollPositions()
-    }
-  }, [persistScrollPositions])
+
 
   useEffect(() => {
     if (!book || chapters.length === 0) return
@@ -352,47 +283,32 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
   const handleScrollProgress = useCallback(
     (percent: number) => {
       setScrollProgress(percent)
-
-      if (scrollSaveTimeoutRef.current) {
-        clearTimeout(scrollSaveTimeoutRef.current)
-      }
-
-      scrollSaveTimeoutRef.current = setTimeout(() => {
-        chapterScrollPositionsRef.current.set(currentChapterIndex, percent)
-        persistScrollPositions()
-      }, 150)
     },
-    [currentChapterIndex, persistScrollPositions],
+    [],
   )
-
-  const snapshotCurrentPosition = useCallback(() => {
-    chapterScrollPositionsRef.current.set(currentChapterIndex, scrollProgress)
-    persistScrollPositions()
-  }, [currentChapterIndex, persistScrollPositions, scrollProgress])
 
   const handlePrevChapter = useCallback(() => {
     if (currentChapterIndex > 0) {
-      snapshotCurrentPosition()
       const newIndex = currentChapterIndex - 1
       router.push(`/reader?bookId=${bookId}&chapterId=${newIndex}`)
     }
-  }, [currentChapterIndex, bookId, router, snapshotCurrentPosition])
+  }, [currentChapterIndex, bookId, router])
 
   const handleNextChapter = useCallback(() => {
     if (currentChapterIndex < chapters.length - 1) {
-      snapshotCurrentPosition()
       const newIndex = currentChapterIndex + 1
       router.push(`/reader?bookId=${bookId}&chapterId=${newIndex}`)
     }
-  }, [currentChapterIndex, chapters.length, bookId, router, snapshotCurrentPosition])
+  }, [currentChapterIndex, chapters.length, bookId, router])
 
   const handleChapterSelect = useCallback(
     (index: number) => {
-      snapshotCurrentPosition()
       router.push(`/reader?bookId=${bookId}&chapterId=${index}`)
     },
-    [bookId, router, snapshotCurrentPosition],
+    [bookId, router],
   )
+
+
 
   const handleFontDecrease = useCallback(() => {
     setSettings((prev: ReaderSettings) => ({
@@ -410,13 +326,13 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
 
   const handleThemeToggle = useCallback((event?: React.MouseEvent<HTMLElement>) => {
     const newTheme = theme === "light" ? "dark" : "light"
-    
+
     if (event) {
       toggleThemeWithTransition(event, setTheme, theme)
     } else {
       setTheme(newTheme)
     }
-    
+
     setSettings((prev: ReaderSettings) => ({
       ...prev,
       theme: newTheme as "light" | "dark",
@@ -453,7 +369,7 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
     }
 
     if (!force && currentLanguage === targetLang && translatedContent) return
-    
+
     setSettings((prev: ReaderSettings) => ({ ...prev, targetLanguage: targetLang }))
 
     if (!force) {
@@ -508,7 +424,7 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
         }
 
         const chunk = chunks[i]
-        
+
         try {
           let chunkTranslated = await translateTextClient(
             chunk,
@@ -517,7 +433,7 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
             book?.title || "",
             displayChapterTitle,
           )
-          
+
           imgTags.forEach((tag, index) => {
             const placeholderRegex = new RegExp(`__\\s*IMG_PLACEHOLDER_${index}\\s*__`, "gi")
             chunkTranslated = chunkTranslated.replace(placeholderRegex, tag)
@@ -533,7 +449,7 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
               .join(""),
           )
           setPendingChunks(remaining)
-          
+
         } catch (chunkError) {
           console.error(`Error translating chunk ${i}:`, chunkError)
           let chunkOriginal = chunk
@@ -541,7 +457,7 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
             const placeholderRegex = new RegExp(`__\\s*IMG_PLACEHOLDER_${index}\\s*__`, "gi")
             chunkOriginal = chunkOriginal.replace(placeholderRegex, tag)
           })
-          translatedParts[i] = chunkOriginal 
+          translatedParts[i] = chunkOriginal
           hasTranslated = true
           const remaining = Math.max(chunks.length - i - 1, 0)
           setTranslatedContent(
@@ -585,20 +501,20 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
       '.overflow-y-auto',
       'div[class*="overflow-y-auto"]'
     ]
-    
+
     for (const selector of selectors) {
       const element = document.querySelector(selector) as HTMLElement
       if (element && element.scrollHeight > element.clientHeight) {
         const originalScrollBehavior = element.style.scrollBehavior
         element.style.scrollBehavior = 'auto'
-        
+
         const startPosition = element.scrollTop
         const distance = startPosition
         const duration = Math.min(800, Math.max(300, distance * 0.5))
         let startTime: number | null = null
 
         const easeInOutCubic = (t: number): number => {
-          return t < 0.5 
+          return t < 0.5
             ? 4 * t * t * t
             : 1 - Math.pow(-2 * t + 2, 3) / 2
         }
@@ -607,29 +523,29 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
           if (startTime === null) startTime = currentTime
           const timeElapsed = currentTime - startTime
           const progress = Math.min(timeElapsed / duration, 1)
-          
+
           const easedProgress = easeInOutCubic(progress)
           element.scrollTop = startPosition - (distance * easedProgress)
-          
+
           if (progress < 1) {
             requestAnimationFrame(animation)
           } else {
             element.style.scrollBehavior = originalScrollBehavior
           }
         }
-        
+
         requestAnimationFrame(animation)
         return
       }
     }
-    
+
     const startPosition = window.pageYOffset
     const distance = startPosition
     const duration = Math.min(800, Math.max(300, distance * 0.5))
     let startTime: number | null = null
 
     const easeInOutCubic = (t: number): number => {
-      return t < 0.5 
+      return t < 0.5
         ? 4 * t * t * t
         : 1 - Math.pow(-2 * t + 2, 3) / 2
     }
@@ -638,15 +554,15 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
       if (startTime === null) startTime = currentTime
       const timeElapsed = currentTime - startTime
       const progress = Math.min(timeElapsed / duration, 1)
-      
+
       const easedProgress = easeInOutCubic(progress)
       window.scrollTo(0, startPosition - (distance * easedProgress))
-      
+
       if (progress < 1) {
         requestAnimationFrame(animation)
       }
     }
-    
+
     requestAnimationFrame(animation)
   }, [])
 
@@ -668,18 +584,18 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
         <div className="absolute -left-32 top-20 h-72 w-72 rounded-full bg-primary/5 blur-3xl dark:bg-primary/10" />
         <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-emerald-400/5 blur-3xl dark:bg-emerald-500/10" />
       </div>
-      
+
       <div className="relative z-10 flex h-full flex-col">
         <ProgressBar progress={overallProgress} />
 
         {/* Fixed scroll fade overlays - creates smooth scroll-away effect */}
-        <div 
+        <div
           className="pointer-events-none fixed top-0 left-0 right-0 z-20 h-10"
           style={{
             background: "linear-gradient(to bottom, var(--reader-bg, #f9f7f1) 0%, var(--reader-bg, #f9f7f1) 20%, transparent 100%)"
           }}
         />
-        <div 
+        <div
           className="pointer-events-none fixed bottom-0 left-0 right-0 z-20 h-10"
           style={{
             background: "linear-gradient(to top, var(--reader-bg, #f9f7f1) 0%, var(--reader-bg, #f9f7f1) 20%, transparent 100%)"
@@ -708,7 +624,8 @@ export function ReaderPageContent({ bookId, chapterId }: ReaderPageContentProps)
             maxWidth={settings.maxWidth}
             textAlign={settings.textAlign}
             onScroll={handleScrollProgress}
-            initialScrollPercent={initialScrollPercent}
+            bookId={bookId}
+            chapterIndex={currentChapterIndex}
             isTranslating={isTranslating}
             pendingChunks={pendingChunks}
           />
